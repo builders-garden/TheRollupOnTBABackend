@@ -15,7 +15,7 @@ import { handleError, handleNotFound } from "./middleware/error.middleware";
 import { setIOInstance } from "./lib/socket";
 import {
   CreateGameHandler,
-  DisconnectPlayerHandler,
+  DisconnectParticipantHandler,
   EndGameHandler,
   MovePieceHandler,
   PaymentConfirmedHandler,
@@ -104,7 +104,7 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", async () => {
     console.log("user disconnected:", socket.id);
-    const handler = new DisconnectPlayerHandler(socket, io);
+    const handler = new DisconnectParticipantHandler(socket, io);
     await handler.handle();
   });
 });

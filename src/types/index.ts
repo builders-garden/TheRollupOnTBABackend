@@ -3,29 +3,22 @@ import type { PaymentStatus } from "./enums";
 
 export * from "./socket";
 
-export interface Player {
+export type Participant = {
   socketId: string;
-  fid: number;
-  displayName: string;
-  username: string;
+  participantId: string;
+  participantUsername: string;
   avatarUrl: string;
   ready: boolean;
   score: number;
-  board: string[][];
-}
+  isCreator?: boolean;
+};
 
 export interface GameRoom {
-  players: Map<number, Player>;
+  participants: Map<string, Participant>;
   board: string[][];
   timer: NodeJS.Timeout | null;
   timeRemaining: number;
 }
-
-export type Participant = {
-  playerId: string;
-  playerUsername: string;
-  isCreator?: boolean;
-};
 
 export type Payment = {
   amount: string;

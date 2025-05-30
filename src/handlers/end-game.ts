@@ -1,9 +1,15 @@
 import { SocketHandler } from "./socket-handler";
-import type { EndGameEvent } from "../types";
+import type { EndGameRequest } from "../types";
 
 export class EndGameHandler extends SocketHandler {
-  async handle({ gameId, playerId, reason }: EndGameEvent): Promise<void> {
-    console.log(`[CONNECTION] Disconnecting player: ${this.socket.id}`);
-    // await this.endGame(gameId, playerId, reason);
+  async handle({
+    gameId,
+    participantId,
+    reason,
+  }: EndGameRequest): Promise<void> {
+    console.log(
+      `[CONNECTION] Ending game: ${gameId} by participant: ${participantId} with reason: ${reason}`
+    );
+    // await this.endGame(gameId, participantId, reason);
   }
 }

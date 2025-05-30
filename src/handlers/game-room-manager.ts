@@ -1,9 +1,10 @@
-import type { GameRoom, Player } from "../types";
+import type { GameRoom, Participant } from "../types";
 import {
   createGameParticipant,
   updateGameParticipant,
 } from "../lib/prisma/queries/game-participants";
 import { updateGame } from "../lib/prisma/queries/games";
+import { GameStatus } from "../types/enums";
 
 export class GameRoomManager {
   private static instance: GameRoomManager;
@@ -22,10 +23,10 @@ export class GameRoomManager {
 
   public async createGameRoom(
     gameId: string,
-    player: Player
+    participant: Participant
   ): Promise<GameRoom> {
     const room: GameRoom = {
-      players: new Map(),
+      participants: new Map(),
       board: Array(10)
         .fill(null)
         .map(() => Array(10).fill("")),
@@ -41,12 +42,15 @@ export class GameRoomManager {
     return this.gameRooms.get(gameId);
   }
 
-  public async addPlayer(gameId: string, player: Player): Promise<void> {
+  public async addParticipant(
+    gameId: string,
+    participant: Participant
+  ): Promise<void> {
     const room = this.getGameRoom(gameId);
     if (room) {
-      room.players.set(player.fid, player);
+      room.participants.set(participant.participantId, participant);
       await createGameParticipant({
-        fid: Number(player.fid),
+        fid: Number(participant.participantId),
         gameId,
         joined: true,
         paid: true,
@@ -56,61 +60,61 @@ export class GameRoomManager {
     }
   }
 
-  public removePlayer(gameId: string, playerFid: number): void {
+  public removeParticipant(gameId: string, participantId: string): void {
     const room = this.getGameRoom(gameId);
     if (room) {
-      room.players.delete(playerFid);
+      room.participants.delete(participantId);
 
       // Clean up empty rooms
-      if (room.players.size === 0) {
+      if (room.participants.size === 0) {
         this.endGame(gameId);
       }
     }
   }
 
-  public async updatePlayerReady(
+  public async updateParticipantReady(
     gameId: string,
-    playerFid: number,
+    participantID: string,
     ready: boolean
   ): Promise<void> {
     const room = this.getGameRoom(gameId);
     if (room) {
-      const player = room.players.get(playerFid);
-      if (player) {
-        player.ready = ready;
-        room.players.set(playerFid, player);
-        await updateGameParticipant(Number(playerFid), gameId, {
+      const participant = room.participants.get(participantID);
+      if (participant) {
+        participant.ready = ready;
+        room.participants.set(participantID, participant);
+        await updateGameParticipant(Number(participantID), gameId, {
           paid: true,
         });
       }
     }
   }
 
-  public updatePlayerBoard(
+  public updateParticipantBoard(
     gameId: string,
-    playerFid: number,
+    participantID: string,
     board: string[][]
   ): void {
     const room = this.getGameRoom(gameId);
     if (room) {
-      const player = room.players.get(playerFid);
-      if (player) {
-        player.board = board;
-        room.players.set(playerFid, player);
+      const participant = room.participants.get(participantID);
+      if (participant) {
+        participant.board = board;
+        room.participants.set(participantID, participant);
       }
     }
   }
 
-  public updatePlayerScore(
+  public updateParticipantScore(
     gameId: string,
-    playerFid: number,
+    participantId: string,
     score: number
   ): void {
     const room = this.getGameRoom(gameId);
     if (room) {
-      const player = room.players.get(playerFid);
-      if (player) {
-        player.score = score;
+      const participant = room.participants.get(participantId);
+      if (participant) {
+        participant.score = score;
       }
     }
   }
@@ -126,8 +130,8 @@ export class GameRoomManager {
       // Update game status in DB
       await updateGame(gameId, {
         status: GameStatus.FINISHED,
-        totalFunds: Array.from(room.players.values()).reduce(
-          (sum, player) => sum + player.score,
+        totalFunds: Array.from(room.participants.values()).reduce(
+          (sum, participant) => sum + participant.score,
           0
         ),
       });
@@ -154,7 +158,7 @@ export class GameRoomManager {
         onTick(room.timeRemaining);
 
         if (room.timeRemaining <= 0) {
-          clearInterval(room.timer!);
+          clearInterval(room.timer?.toString());
           onEnd();
         }
       }, 1000);
@@ -193,20 +197,20 @@ export class GameRoomManager {
     return Array.from(this.gameRooms.keys());
   }
 
-  public getGamePlayers(gameId: string): Player[] {
+  public getGameParticipants(gameId: string): Participant[] {
     const room = this.getGameRoom(gameId);
-    return room ? Array.from(room.players.values()) : [];
+    return room ? Array.from(room.participants.values()) : [];
   }
 
-  public async disconnectPlayer(
+  public async disconnectParticipant(
     gameId: string,
     socketId: string
   ): Promise<void> {
     const room = this.getGameRoom(gameId);
     if (room) {
-      room.players.forEach((player, fid) => {
-        if (player.socketId === socketId) {
-          this.removePlayer(gameId, fid);
+      room.participants.forEach((participant, participantId) => {
+        if (participant.socketId === socketId) {
+          this.removeParticipant(gameId, participantId);
         }
       });
     }

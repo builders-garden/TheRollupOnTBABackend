@@ -3,18 +3,20 @@ import { SocketHandler } from "./socket-handler";
 import type { StartGameEvent } from "../types";
 
 export class StartGameHandler extends SocketHandler {
-  async handle({ gameId, playerId }: StartGameEvent) {
+  async handle({ gameId }: StartGameEvent) {
     console.log(`[GAME] Starting game ${gameId}`);
 
     const room = await gameRoomManager.getGameRoom(gameId);
     console.log("room", room);
     if (!room) return;
-    const allPlayersReady = Array.from(room.players.values()).every(
-      (player) => player.ready
+    const allParticipantsReady = Array.from(room.participants.values()).every(
+      (participant) => participant.ready
     );
-    console.log("allPlayersReady", allPlayersReady);
-    if (!allPlayersReady) {
-      console.log(`[GAME] Not all players are ready to start game ${gameId}`);
+    console.log("allParticipantsReady", allParticipantsReady);
+    if (!allParticipantsReady) {
+      console.log(
+        `[GAME] Not all participants are ready to start game ${gameId}`
+      );
       return;
     }
 
@@ -33,16 +35,18 @@ export class StartGameHandler extends SocketHandler {
     this.emitToGame(gameId, "game_started", {
       board: room.board,
       timeRemaining: room.timeRemaining,
-      players: Array.from(room.players.values()),
+      participants: Array.from(room.participants.values()),
     });
-    const newPlayers = Array.from(room.players.values()).map((player) => ({
-      ...player,
-      availableLetters: "WORDS",
-    }));
-    console.log("newPlayers", newPlayers);
-    this.emitToGame(gameId, "refreshed_available_letters", {
+    const newParticipant = Array.from(room.participants.values()).map(
+      (participant) => ({
+        ...participant,
+        availableLetters: "WORDS",
+      })
+    );
+    console.log("newParticipant", newParticipant);
+    this.emitToGame(gameId, "participant_ready", {
       gameId,
-      players: newPlayers,
+      newParticipant,
     });
   }
 }

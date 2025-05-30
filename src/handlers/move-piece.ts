@@ -3,9 +3,9 @@ import { SocketHandler } from "./socket-handler";
 import type { MovePieceEvent } from "../types";
 
 export class MovePieceHandler extends SocketHandler {
-  async handle({ gameId, playerId, move }: MovePieceEvent) {
+  async handle({ gameId, participantId, move }: MovePieceEvent) {
     console.log(
-      `[GAME] Player ${playerId} moving piece from ${move.from} to ${move.to} in game ${gameId}`
+      `[GAME] Participant ${participantId} moving piece from ${move.from} to ${move.to} in game ${gameId}`
     );
 
     const room = await gameRoomManager.getGameRoom(gameId);
@@ -13,13 +13,17 @@ export class MovePieceHandler extends SocketHandler {
 
     if (room.board[x][y] === "") {
       room.board[x][y] = letter;
-      await gameRoomManager.updatePlayerBoard(gameId, player.fid, room.board);
+      await gameRoomManager.updateParticipantBoard(
+        gameId,
+        participantId,
+        room.board
+      );
       this.emitToGame(gameId, "letter_placed", {
         x,
         y,
         letter,
         gameId,
-        player,
+        participantId,
       });
     }
   }
