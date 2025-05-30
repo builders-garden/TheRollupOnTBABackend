@@ -1,0 +1,199 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id                  String   @id @default(ulid())
+  fid                 Int      @unique
+  username            String
+  displayName         String
+  avatarUrl           String?
+  walletAddresses     String?
+  notificationDetails String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relationships
+  gamesAsWhite   Game[]             @relation("WhitePlayer")
+  gamesAsBlack   Game[]             @relation("BlackPlayer")
+  gamesCreated   Game[]             @relation("GameCreator")
+  spectatedGames GameSpectator[]
+  chatMessages   GameChatMessage[]
+  chatReactions  GameChatReaction[]
+  sentTips       GameChatTip[]      @relation("TipSender")
+  receivedTips   GameChatTip[]      @relation("TipReceiver")
+  statistics     UserStatistics?
+  notifications  UserNotification[]
+
+  @@index([id], map: "idx_users_id")
+  @@index([fid], map: "idx_users_fid")
+  @@index([username], map: "idx_users_username")
+  @@map("users")
+}
+
+model Game {
+  id            String    @id @default(ulid())
+  whitePlayerId String
+  blackPlayerId String
+  creatorId     String
+  stakeAmount   Float // Amount in USDC
+  whiteStaked   Boolean   @default(false)
+  blackStaked   Boolean   @default(false)
+  gameState     GameState @relation(fields: [gameStateId], references: [id])
+  gameStateId   String
+  currentFen    String // Current FEN notation of the board
+  moves         String // PGN format of all moves
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relationships
+  whitePlayer User            @relation("WhitePlayer", fields: [whitePlayerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  blackPlayer User            @relation("BlackPlayer", fields: [blackPlayerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  creator     User            @relation("GameCreator", fields: [creatorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  spectators  GameSpectator[]
+  chat        GameChat?
+
+  @@index([whitePlayerId], map: "idx_games_whitePlayerId")
+  @@index([blackPlayerId], map: "idx_games_blackPlayerId")
+  @@index([creatorId], map: "idx_games_creatorId")
+  @@map("games")
+}
+
+model GameState {
+  id          String   @id @default(ulid())
+  name        String   @unique // e.g., "PENDING", "ACTIVE", "DRAW", "WHITE_WON", "BLACK_WON", "ABANDONED"
+  description String
+  games       Game[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name], map: "idx_game_states_name")
+  @@map("game_states")
+}
+
+model GameSpectator {
+  id       String    @id @default(ulid())
+  userId   String
+  gameId   String
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  game Game @relation(fields: [gameId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([userId, gameId])
+  @@index([userId], map: "idx_game_spectators_userId")
+  @@index([gameId], map: "idx_game_spectators_gameId")
+  @@map("game_spectators")
+}
+
+model GameChat {
+  id        String   @id @default(ulid())
+  gameId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  game     Game              @relation(fields: [gameId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  messages GameChatMessage[]
+
+  @@index([gameId], map: "idx_game_chats_gameId")
+  @@map("game_chats")
+}
+
+model GameChatMessage {
+  id        String   @id @default(ulid())
+  chatId    String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  chat      GameChat           @relation(fields: [chatId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user      User               @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reactions GameChatReaction[]
+  tips      GameChatTip[]
+
+  @@index([chatId], map: "idx_game_chat_messages_chatId")
+  @@index([userId], map: "idx_game_chat_messages_userId")
+  @@map("game_chat_messages")
+}
+
+model GameChatReaction {
+  id        String   @id @default(ulid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  // Relationships
+  message GameChatMessage @relation(fields: [messageId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user    User            @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([messageId, userId, emoji])
+  @@map("game_chat_reactions")
+}
+
+model GameChatTip {
+  id         String   @id @default(ulid())
+  messageId  String
+  senderId   String
+  receiverId String
+  amount     Float // Amount in USDC
+  createdAt  DateTime @default(now())
+
+  // Relationships
+  message  GameChatMessage @relation(fields: [messageId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sender   User            @relation("TipSender", fields: [senderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  receiver User            @relation("TipReceiver", fields: [receiverId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("game_chat_tips")
+}
+
+model UserStatistics {
+  id            String   @id @default(ulid())
+  userId        String   @unique
+  rating        Int      @default(100) // ELO rating
+  gamesPlayed   Int      @default(0)
+  gamesWon      Int      @default(0)
+  gamesLost     Int      @default(0)
+  gamesDrawn    Int      @default(0)
+  totalEarned   Float    @default(0) // Total USDC earned
+  totalLost     Float    @default(0) // Total USDC lost
+  winStreak     Int      @default(0) // Current win streak
+  bestWinStreak Int      @default(0) // Best win streak
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([userId], map: "idx_user_statistics_userId")
+  @@map("user_statistics")
+}
+
+model UserNotification {
+  id        String   @id @default(ulid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([userId], map: "idx_user_notifications_userId")
+  @@map("user_notifications")
+}
