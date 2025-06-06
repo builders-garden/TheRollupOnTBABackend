@@ -1,9 +1,9 @@
+import { PrismaLibSQL } from "@prisma/adapter-libsql";
 import { PrismaClient } from "@prisma/client";
+import { env } from "../../config/env";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
-
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+const adapter = new PrismaLibSQL({
+  url: env.LIBSQL_DATABASE_URL,
+  authToken: env.LIBSQL_DATABASE_TOKEN,
+});
+export const prisma = new PrismaClient({ adapter });

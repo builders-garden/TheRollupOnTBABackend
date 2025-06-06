@@ -1,7 +1,12 @@
 import { prisma } from "../client";
 import type { CreateGameRequest } from "../../../types";
-import { GameParticipantColor, type Prisma } from "@prisma/client";
+import {
+  GameParticipantColor,
+  GameParticipantStatus,
+  type Prisma,
+} from "@prisma/client";
 import { getUserByFid, getOrCreateUserByFid } from "./user";
+import { getGameOptionTime } from "../../utils";
 
 /**
  * Get a game by its id.
@@ -50,7 +55,8 @@ export async function createGame({
   game,
   payment,
   participants,
-}: CreateGameRequest) {
+  creatorSocketId,
+}: CreateGameRequest & { creatorSocketId: string }) {
   const creator = participants.find((p) => p.isCreator);
   const opponent = participants.find((p) => !p.isCreator);
   if (!creator || !opponent) throw new Error("Participants not found");
@@ -65,12 +71,12 @@ export async function createGame({
   const randomNumber = Math.random();
 
   const whitePlayerId = randomNumber < 0.5 ? creatorUser.id : opponentUser.id;
-  const whitePaid = randomNumber < 0.5;
   const whitePaidTxHash = randomNumber < 0.5 ? payment.txHash : null;
 
   const blackPlayerId = randomNumber < 0.5 ? opponentUser.id : creatorUser.id;
-  const blackPaid = randomNumber >= 0.5;
   const blackPaidTxHash = randomNumber >= 0.5 ? payment.txHash : null;
+
+  const { duration } = getGameOptionTime(game.mode, game.option);
 
   return prisma.game.create({
     data: {
@@ -78,7 +84,7 @@ export async function createGame({
       // game details
       gameMode: game.mode ?? undefined,
       gameOption: game.option ?? undefined,
-      wageAmount: Number(payment.amount),
+      wageAmount: payment.amountUSDC,
       // participants
       participants: {
         create: [
@@ -86,15 +92,29 @@ export async function createGame({
             userId: whitePlayerId,
             color: GameParticipantColor.WHITE,
             isCreator: creatorUser.id === whitePlayerId,
-            paid: whitePaid,
+            paid: creatorUser.id === whitePlayerId,
             paidTxHash: whitePaidTxHash,
+            socketId:
+              creatorUser.id === whitePlayerId ? creatorSocketId : undefined,
+            status:
+              creatorUser.id === whitePlayerId
+                ? GameParticipantStatus.JOINED
+                : GameParticipantStatus.WAITING,
+            timeLeft: duration,
           },
           {
             userId: blackPlayerId,
             color: GameParticipantColor.BLACK,
             isCreator: creatorUser.id === blackPlayerId,
-            paid: blackPaid,
+            paid: creatorUser.id === blackPlayerId,
             paidTxHash: blackPaidTxHash,
+            socketId:
+              creatorUser.id === blackPlayerId ? creatorSocketId : undefined,
+            status:
+              creatorUser.id === blackPlayerId
+                ? GameParticipantStatus.JOINED
+                : GameParticipantStatus.WAITING,
+            timeLeft: duration,
           },
         ],
       },

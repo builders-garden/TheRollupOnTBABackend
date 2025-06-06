@@ -1,4 +1,4 @@
-import { GameMode, GameOption } from "../types/enums";
+import { GameMode, GameOption } from "@prisma/client";
 import type { GameOptionDetails } from "../types";
 
 export const GAME_OPTIONS: Record<

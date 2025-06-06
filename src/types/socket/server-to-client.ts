@@ -1,6 +1,7 @@
 import type { Move } from "chess.js";
 import type { Participant } from "..";
 import type { GameState, GameEndReason } from "@prisma/client";
+import { SocketEvents } from "../enums";
 
 export type CreateGameResponse = {
   gameId: string;
@@ -57,15 +58,23 @@ export type ParticipantJoinedEvent = {
   participantId: string;
 };
 
+export type SendMessageEvent = {
+  gameId: string;
+  participantId: string;
+  message: string;
+};
+
 export type ServerToClientEvents = {
-  create_game_response: CreateGameResponse;
-  join_game_response: JoinGameResponse;
-  payment_confirmed: PaymentConfirmedEvent;
-  participant_ready: ParticipantReadyEvent;
-  start_game: StartGameEvent;
-  move_piece: MovePieceEvent;
-  accept_game_end: AcceptGameEndEvent;
-  game_ended: GameEndedEvent;
-  participant_left: ParticipantLeftEvent;
-  participant_joined: ParticipantJoinedEvent;
+  [SocketEvents.CREATE_GAME_RESPONSE]: CreateGameResponse;
+  [SocketEvents.JOIN_GAME_RESPONSE]: JoinGameResponse;
+  [SocketEvents.PAYMENT_CONFIRMED]: PaymentConfirmedEvent;
+  [SocketEvents.PARTICIPANT_READY]: ParticipantReadyEvent;
+  [SocketEvents.START_GAME]: StartGameEvent;
+  [SocketEvents.MOVE_PIECE]: MovePieceEvent;
+  [SocketEvents.SEND_MESSAGE]: SendMessageEvent;
+  [SocketEvents.ACCEPT_GAME_END]: AcceptGameEndEvent;
+  [SocketEvents.GAME_ENDED]: GameEndedEvent;
+  [SocketEvents.PARTICIPANT_LEFT]: ParticipantLeftEvent;
+  [SocketEvents.PARTICIPANT_JOINED]: ParticipantJoinedEvent;
+  [SocketEvents.ERROR]: ErrorEvent;
 };

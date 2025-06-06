@@ -620,7 +620,7 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@libsql/client@^0.15.7":
+"@libsql/client@^0.15.8":
   version "0.15.8"
   resolved "https://registry.yarnpkg.com/@libsql/client/-/client-0.15.8.tgz#48b4d11a1e5c259b1de02fe6d14c9072097e4c6b"
   integrity sha512-TskygwF+ToZeWhPPT0WennyGrP3tmkKraaKopT2YwUjqD6DWDRm6SG5iy0VqnaO+HC9FNBCDX0oQPODU3gqqPQ==
@@ -803,7 +803,7 @@
   resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.8.0.tgz#cee43d801fcef9644b11b8194857695acd5f815a"
   integrity sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==
 
-"@prisma/adapter-libsql@^6.8.2":
+"@prisma/adapter-libsql@^6.9.0":
   version "6.9.0"
   resolved "https://registry.yarnpkg.com/@prisma/adapter-libsql/-/adapter-libsql-6.9.0.tgz#5eb3b89f1c9914a5028b6480beb1c269464c0f8c"
   integrity sha512-td0O+K9P5ilLVSKwJQaCyXlP0DSjOtuL7asxwEWtuM/+PHizEtfOLa7oavPSymQNOOPnw7YKWyU0/SS6W2/+Og==
@@ -812,7 +812,7 @@
     "@prisma/driver-adapter-utils" "6.9.0"
     async-mutex "0.5.0"
 
-"@prisma/client@^6.8.2":
+"@prisma/client@^6.9.0":
   version "6.9.0"
   resolved "https://registry.yarnpkg.com/@prisma/client/-/client-6.9.0.tgz#3779ba71a4c9fe8c329506f126dc70b71410c358"
   integrity sha512-Gg7j1hwy3SgF1KHrh0PZsYvAaykeR0PaxusnLXydehS96voYCGt1U5zVR31NIouYc63hWzidcrir1a7AIyCsNQ==

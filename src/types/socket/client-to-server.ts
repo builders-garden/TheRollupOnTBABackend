@@ -1,12 +1,18 @@
 import type { Move } from "chess.js";
 import type { Participant, Payment } from "..";
-import type { GameMode, GameOption, GameEndReason } from "@prisma/client";
+import type {
+  GameMode,
+  GameOption,
+  GameEndReason,
+  GameChatContentType,
+} from "@prisma/client";
+import { SocketEvents } from "../enums";
 
 export type CreateGameRequest = {
   game: {
     mode: GameMode;
     option: GameOption;
-    contractId: number;
+    contractId?: string;
   };
   participants: Participant[];
   payment: Payment;
@@ -35,6 +41,15 @@ export type MovePieceRequest = {
   move: Move;
 };
 
+export type SendMessageRequest = {
+  gameId: string;
+  participantId: string;
+  message: {
+    content: string;
+    contentType: GameChatContentType;
+  };
+};
+
 export type EndGameRequest = {
   gameId: string;
   participantId: string;
@@ -42,10 +57,11 @@ export type EndGameRequest = {
 };
 
 export type ClientToServerEvents = {
-  create_game_request: CreateGameRequest;
-  join_game_request: JoinGameRequest;
-  payment_confirmed_request: PaymentConfirmedRequest;
-  participant_ready_request: ParticipantReadyRequest;
-  move_piece_request: MovePieceRequest;
-  end_game_request: EndGameRequest;
+  [SocketEvents.CREATE_GAME_REQUEST]: CreateGameRequest;
+  [SocketEvents.JOIN_GAME_REQUEST]: JoinGameRequest;
+  [SocketEvents.PAYMENT_CONFIRMED_REQUEST]: PaymentConfirmedRequest;
+  [SocketEvents.PARTICIPANT_READY_REQUEST]: ParticipantReadyRequest;
+  [SocketEvents.MOVE_PIECE_REQUEST]: MovePieceRequest;
+  [SocketEvents.SEND_MESSAGE_REQUEST]: SendMessageRequest;
+  [SocketEvents.END_GAME_REQUEST]: EndGameRequest;
 };

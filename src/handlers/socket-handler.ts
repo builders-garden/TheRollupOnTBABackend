@@ -10,6 +10,7 @@ export class SocketHandler {
   }
 
   protected emitToGame(gameId: string, event: string, data: unknown) {
+    console.log(`[EMIT TO GAME] ${event} to ${gameId}`);
     this.io.to(gameId).emit(event, data);
   }
 }

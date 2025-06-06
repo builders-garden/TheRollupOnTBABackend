@@ -15,13 +15,14 @@ export class CreateGameHandler extends SocketHandler {
         game: { mode, option, contractId },
         payment,
         participants,
+        creatorSocketId: this.socket.id,
       });
       // 2 creator join the room
-      this.socket.join(newGame.id);
+      // this.socket.join(newGame.id);
       console.log(
         `[CREATE GAME] game created ${newGame.id} between ${participants[0].participantFid} and ${participants[1].participantFid}`
       );
-      this.emitToGame(newGame.id, SocketEvents.CREATE_GAME_RESPONSE, {
+      this.emitToGame(this.socket.id, SocketEvents.CREATE_GAME_RESPONSE, {
         gameId: newGame.id,
         status: newGame.gameState,
         participants: newGame.participants,
