@@ -1,6 +1,8 @@
 import { gameRoomManager } from "./game-room-manager";
 import { SocketHandler } from "./socket-handler";
 import type { MovePieceEvent } from "../types";
+import { getGameParticipantById } from "../lib/prisma/queries/game-participants";
+import { getGameById } from "../lib/prisma/queries/game";
 
 export class MovePieceHandler extends SocketHandler {
   async handle({ gameId, participantId, move }: MovePieceEvent) {
@@ -11,20 +13,19 @@ export class MovePieceHandler extends SocketHandler {
     const room = await gameRoomManager.getGameRoom(gameId);
     if (!room) return;
 
-    if (room.board[x][y] === "") {
-      room.board[x][y] = letter;
-      await gameRoomManager.updateParticipantBoard(
-        gameId,
-        participantId,
-        room.board
-      );
-      this.emitToGame(gameId, "letter_placed", {
-        x,
-        y,
-        letter,
-        gameId,
-        participantId,
-      });
-    }
+    const game = await getGameById(gameId);
+    if (!game) return;
+
+    const participant = await getGameParticipantById(participantId);
+    if (!participant) return;
+
+    // TODO check if move is valid
+    const validMove = true;
+    if (!validMove) return;
+
+    // TODO update game board
+    // TODO update game participants
+    // TODO update game
+    // TODO emit move to all participants
   }
 }

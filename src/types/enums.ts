@@ -39,6 +39,29 @@ export enum GameEndReason {
   FIFTY_MOVE_RULE = "fifty_move_rule",
 }
 
+export enum SocketEvents {
+  // client to server
+  CREATE_GAME_REQUEST = "create_game_request",
+  JOIN_GAME_REQUEST = "join_game_request",
+  PAYMENT_CONFIRMED_REQUEST = "payment_confirmed_request",
+  START_GAME_REQUEST = "start_game_request",
+  PARTICIPANT_READY_REQUEST = "participant_ready_request",
+  MOVE_PIECE_REQUEST = "move_piece_request",
+  END_GAME_REQUEST = "end_game_request",
+  // server to client
+  CREATE_GAME_RESPONSE = "create_game_response",
+  JOIN_GAME_RESPONSE = "join_game_response",
+  PAYMENT_CONFIRMED = "payment_confirmed",
+  PARTICIPANT_READY = "participant_ready",
+  PARTICIPANT_LEFT = "participant_left",
+  PARTICIPANT_JOINED = "participant_joined",
+  START_GAME = "start_game",
+  MOVE_PIECE = "move_piece",
+  ACCEPT_GAME_END = "accept_game_end",
+  GAME_ENDED = "game_ended",
+  ERROR = "error",
+}
+
 export const GAME_MODE_OPTIONS = {
   [GameMode.BULLET]: [
     {

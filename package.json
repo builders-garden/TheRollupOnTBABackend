@@ -12,7 +12,6 @@
     "format": "npx @biomejs/biome format --write ./src",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio",
     "postinstall": "prisma generate"
   },
   "lint-staged": {
@@ -23,9 +22,9 @@
   "license": "ISC",
   "dependencies": {
     "@farcaster/frame-sdk": "^0.0.53",
-    "@libsql/client": "^0.15.7",
-    "@prisma/adapter-libsql": "^6.8.2",
-    "@prisma/client": "^6.8.2",
+    "@libsql/client": "^0.15.8",
+    "@prisma/adapter-libsql": "^6.9.0",
+    "@prisma/client": "^6.9.0",
     "@t3-oss/env-core": "^0.13.6",
     "biome": "^0.3.3",
     "chess.js": "^1.2.0",

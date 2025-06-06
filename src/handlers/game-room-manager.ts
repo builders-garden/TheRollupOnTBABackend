@@ -3,8 +3,13 @@ import {
   createGameParticipant,
   updateGameParticipant,
 } from "../lib/prisma/queries/game-participants";
-import { updateGame } from "../lib/prisma/queries/games";
-import { GameStatus } from "../types/enums";
+import { updateGame } from "../lib/prisma/queries/game";
+import {
+  GameEndReason,
+  GameParticipantColor,
+  GameParticipantStatus,
+  GameState,
+} from "@prisma/client";
 
 export class GameRoomManager {
   private static instance: GameRoomManager;
@@ -21,23 +26,6 @@ export class GameRoomManager {
     return GameRoomManager.instance;
   }
 
-  public async createGameRoom(
-    gameId: string,
-    participant: Participant
-  ): Promise<GameRoom> {
-    const room: GameRoom = {
-      participants: new Map(),
-      board: Array(10)
-        .fill(null)
-        .map(() => Array(10).fill("")),
-      timer: null,
-      timeRemaining: 300, // 5 minutes
-    };
-    console.log("room", room);
-    this.gameRooms.set(gameId, room);
-    return room;
-  }
-
   public getGameRoom(gameId: string): GameRoom | undefined {
     return this.gameRooms.get(gameId);
   }
@@ -48,14 +36,22 @@ export class GameRoomManager {
   ): Promise<void> {
     const room = this.getGameRoom(gameId);
     if (room) {
-      room.participants.set(participant.participantId, participant);
+      room.participants.set(participant.participantFid.toString(), participant);
       await createGameParticipant({
-        fid: Number(participant.participantId),
-        gameId,
-        joined: true,
+        user: {
+          connect: {
+            fid: Number(participant.participantFid),
+          },
+        },
+        game: {
+          connect: {
+            id: gameId,
+          },
+        },
+        color: GameParticipantColor.WHITE,
+        isCreator: true,
         paid: true,
-        winner: false,
-        paymentHash: "",
+        paidTxHash: "",
       });
     }
   }
@@ -83,24 +79,11 @@ export class GameRoomManager {
       if (participant) {
         participant.ready = ready;
         room.participants.set(participantID, participant);
-        await updateGameParticipant(Number(participantID), gameId, {
-          paid: true,
+        await updateGameParticipant(participantID, {
+          status: ready
+            ? GameParticipantStatus.READY
+            : GameParticipantStatus.WAITING,
         });
-      }
-    }
-  }
-
-  public updateParticipantBoard(
-    gameId: string,
-    participantID: string,
-    board: string[][]
-  ): void {
-    const room = this.getGameRoom(gameId);
-    if (room) {
-      const participant = room.participants.get(participantID);
-      if (participant) {
-        participant.board = board;
-        room.participants.set(participantID, participant);
       }
     }
   }
@@ -129,11 +112,8 @@ export class GameRoomManager {
 
       // Update game status in DB
       await updateGame(gameId, {
-        status: GameStatus.FINISHED,
-        totalFunds: Array.from(room.participants.values()).reduce(
-          (sum, participant) => sum + participant.score,
-          0
-        ),
+        gameState: GameState.ENDED,
+        gameEndReason: GameEndReason.WHITE_TIMEOUT,
       });
 
       // Remove from memory

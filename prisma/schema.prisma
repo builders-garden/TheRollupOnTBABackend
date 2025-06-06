@@ -8,6 +8,83 @@ datasource db {
   url      = "file:./dev.db"
 }
 
+// ENUMS
+
+enum GameState {
+  PENDING
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+enum GameResult {
+  DRAW
+  WHITE_WON
+  BLACK_WON
+}
+
+enum GameEndReason {
+  // 1. i win: checkmate
+  CHECKMATE
+  // 2. i lose: resign
+  WHITE_RESIGNED
+  BLACK_RESIGNED
+  // 3. i lose: timeout
+  WHITE_TIMEOUT
+  BLACK_TIMEOUT
+  // 4. draw: stalemate
+  STALEMATE
+  // 5. draw: insufficient material
+  INSUFFICIENT_MATERIAL
+  // 6. draw: threefold repetition
+  THREEFOLD_REPETITION
+  // 7. draw: fifty move rule
+  FIFTY_MOVE_RULE
+  // 8. draw: agreement
+  AGREEMENT
+  // 9. other
+  OTHER
+}
+
+enum GameMode {
+  BULLET
+  BLITZ
+  BLUNT
+  RAPID
+}
+
+enum GameOption {
+  BULLET_1
+  BULLET_1_PLUS_1
+  BULLET_2_PLUS_1
+  BLITZ_3
+  BLITZ_3_PLUS_2
+  BLUNT_4_20
+  RAPID_5
+  RAPID_10
+}
+
+enum GameParticipantStatus {
+  WAITING
+  JOINED
+  READY
+  LEFT
+}
+
+enum GameParticipantColor {
+  WHITE
+  BLACK
+}
+
+enum GameChatContentType {
+  TEXT
+  IMAGE
+  GIF
+  TIP
+}
+
+// MODELS
+
 model User {
   id                  String   @id @default(ulid())
   fid                 Int      @unique
@@ -16,20 +93,17 @@ model User {
   avatarUrl           String?
   walletAddresses     String?
   notificationDetails String?
+  referrerFid         Int?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
   // Relationships
-  gamesAsWhite   Game[]             @relation("WhitePlayer")
-  gamesAsBlack   Game[]             @relation("BlackPlayer")
-  gamesCreated   Game[]             @relation("GameCreator")
-  spectatedGames GameSpectator[]
-  chatMessages   GameChatMessage[]
-  chatReactions  GameChatReaction[]
-  sentTips       GameChatTip[]      @relation("TipSender")
-  receivedTips   GameChatTip[]      @relation("TipReceiver")
-  statistics     UserStatistics?
-  notifications  UserNotification[]
+  gameParticipants GameParticipant[]
+  moves            GameMove[]
+  spectatedGames   GameSpectator[]
+  chatMessages     GameChatMessage[]
+  statistics       UserStatistics?
+  notifications    UserNotification[]
 
   @@index([id], map: "idx_users_id")
   @@index([fid], map: "idx_users_fid")
@@ -37,44 +111,86 @@ model User {
   @@map("users")
 }
 
-model Game {
-  id            String    @id @default(ulid())
-  whitePlayerId String
-  blackPlayerId String
-  creatorId     String
-  stakeAmount   Float // Amount in USDC
-  whiteStaked   Boolean   @default(false)
-  blackStaked   Boolean   @default(false)
-  gameState     GameState @relation(fields: [gameStateId], references: [id])
-  gameStateId   String
-  currentFen    String // Current FEN notation of the board
-  moves         String // PGN format of all moves
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+model GameParticipant {
+  id       String  @id @default(ulid())
+  gameId   String
+  userId   String
+  socketId String? // socket id of the participant
+
+  isCreator  Boolean               @default(false)
+  status     GameParticipantStatus @default(WAITING)
+  paid       Boolean               @default(false)
+  paidTxHash String? // tx hash of the payment
+
+  color    GameParticipantColor
+  isWinner Boolean              @default(false)
+
+  timeLeft Int       @default(300) // time left 5 minutes in seconds
+  endTime  DateTime? // time when the game will end
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  whitePlayer User            @relation("WhitePlayer", fields: [whitePlayerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  blackPlayer User            @relation("BlackPlayer", fields: [blackPlayerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  creator     User            @relation("GameCreator", fields: [creatorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  spectators  GameSpectator[]
-  chat        GameChat?
+  game Game @relation(fields: [gameId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@index([whitePlayerId], map: "idx_games_whitePlayerId")
-  @@index([blackPlayerId], map: "idx_games_blackPlayerId")
-  @@index([creatorId], map: "idx_games_creatorId")
+  @@index([gameId], map: "idx_game_participants_gameId")
+  @@index([userId], map: "idx_game_participants_userId")
+  @@map("game_participants")
+}
+
+model Game {
+  id           String            @id @default(ulid())
+  contractId   Int?              @unique // Numeric ID for smart contract interaction
+  participants GameParticipant[]
+
+  gameMode   GameMode   @default(RAPID)
+  gameOption GameOption @default(RAPID_5)
+
+  wageAmount Float @default(1) // Amount in USDC
+
+  gameState     GameState      @default(PENDING)
+  gameResult    GameResult?
+  gameEndReason GameEndReason?
+  gameEndTxHash String? // tx hash of the game end
+
+  currentFen String @default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+
+  totalMoves Int        @default(0) // Number of moves made
+  moves      GameMove[]
+  pgn        String? // PGN format of all moves
+
+  createdAt DateTime  @default(now())
+  startedAt DateTime?
+  endedAt   DateTime?
+  updatedAt DateTime  @updatedAt
+
+  spectators GameSpectator[]
+  messages   GameChatMessage[]
+
+  @@index([id], map: "idx_games_id")
+  @@index([gameState], map: "idx_games_gameState")
   @@map("games")
 }
 
-model GameState {
-  id          String   @id @default(ulid())
-  name        String   @unique // e.g., "PENDING", "ACTIVE", "DRAW", "WHITE_WON", "BLACK_WON", "ABANDONED"
-  description String
-  games       Game[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model GameMove {
+  id        String   @id @default(ulid())
+  gameId    String
+  playerId  String
+  move      String
+  san       String // Standard Algebraic Notation, e.g., "e4"
+  lan       String // Long Algebraic Notation, e.g., "e2e4"
+  fen       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([name], map: "idx_game_states_name")
-  @@map("game_states")
+  // Relationships
+  game   Game @relation(fields: [gameId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  player User @relation(fields: [playerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([gameId], map: "idx_game_moves_gameId")
+  @@map("game_moves")
 }
 
 model GameSpectator {
@@ -94,68 +210,23 @@ model GameSpectator {
   @@map("game_spectators")
 }
 
-model GameChat {
-  id        String   @id @default(ulid())
-  gameId    String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relationships
-  game     Game              @relation(fields: [gameId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  messages GameChatMessage[]
-
-  @@index([gameId], map: "idx_game_chats_gameId")
-  @@map("game_chats")
-}
-
 model GameChatMessage {
-  id        String   @id @default(ulid())
-  chatId    String
-  userId    String
-  content   String
+  id          String              @id @default(ulid())
+  gameId      String
+  userId      String
+  content     String
+  contentType GameChatContentType @default(TEXT)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relationships
-  chat      GameChat           @relation(fields: [chatId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user      User               @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  reactions GameChatReaction[]
-  tips      GameChatTip[]
+  game Game @relation(fields: [gameId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@index([chatId], map: "idx_game_chat_messages_chatId")
+  @@index([gameId], map: "idx_game_chat_messages_gameId")
   @@index([userId], map: "idx_game_chat_messages_userId")
   @@map("game_chat_messages")
-}
-
-model GameChatReaction {
-  id        String   @id @default(ulid())
-  messageId String
-  userId    String
-  emoji     String
-  createdAt DateTime @default(now())
-
-  // Relationships
-  message GameChatMessage @relation(fields: [messageId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user    User            @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([messageId, userId, emoji])
-  @@map("game_chat_reactions")
-}
-
-model GameChatTip {
-  id         String   @id @default(ulid())
-  messageId  String
-  senderId   String
-  receiverId String
-  amount     Float // Amount in USDC
-  createdAt  DateTime @default(now())
-
-  // Relationships
-  message  GameChatMessage @relation(fields: [messageId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  sender   User            @relation("TipSender", fields: [senderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  receiver User            @relation("TipReceiver", fields: [receiverId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@map("game_chat_tips")
 }
 
 model UserStatistics {

@@ -5,7 +5,7 @@ export * from "./socket";
 
 export type Participant = {
   socketId: string;
-  participantId: string;
+  participantFid: number;
   participantUsername: string;
   avatarUrl: string;
   ready: boolean;

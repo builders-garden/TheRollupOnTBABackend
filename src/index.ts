@@ -29,7 +29,8 @@ import type {
   PaymentConfirmedEvent,
   StartGameEvent,
 } from "./types";
-import { baseOrigins } from "./lib/cors";
+import { baseOrigins, localOrigins } from "./lib/cors";
+import { SocketEvents } from "./types/enums";
 
 // Load environment variables
 dotenv.config();
@@ -48,15 +49,15 @@ app.use(responseMiddleware);
 const httpServer = http.createServer(app);
 const allowedOrigins =
   env.NODE_ENV === "development"
-    ? [...baseOrigins, "http://localhost:3000"]
+    ? [...baseOrigins, ...localOrigins]
     : baseOrigins;
 
 // Initialize Socket.IO server
 const io = new SocketIOServer(httpServer, {
   cors: {
     origin: allowedOrigins,
-    credentials: true,
-    methods: ["GET", "POST"],
+    // credentials: true,
+    methods: ["GET", "POST", "OPTIONS"],
   },
 });
 
@@ -67,36 +68,42 @@ setIOInstance(io);
 io.on("connection", (socket) => {
   console.log("0. client connected:", socket.id);
 
-  socket.on("create-game-request", async (data: CreateGameRequest) => {
-    console.log("create game request:", data);
-    const handler = new CreateGameHandler(socket, io);
-    await handler.handle(data);
-  });
+  socket.on(
+    SocketEvents.CREATE_GAME_REQUEST,
+    async (data: CreateGameRequest) => {
+      console.log("create game request:", data);
+      const handler = new CreateGameHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
 
-  socket.on("join_game_request", async (data: JoinGameRequest) => {
+  socket.on(SocketEvents.JOIN_GAME_REQUEST, async (data: JoinGameRequest) => {
     console.log("joining chess game:", data);
     socket.broadcast.emit("join-game-response", data);
   });
 
-  socket.on("payment_confirmed", async (data: PaymentConfirmedEvent) => {
-    console.log("payment confirmed:", data);
-    const handler = new PaymentConfirmedHandler(socket, io);
-    await handler.handle(data);
-  });
+  socket.on(
+    SocketEvents.PAYMENT_CONFIRMED_REQUEST,
+    async (data: PaymentConfirmedEvent) => {
+      console.log("payment confirmed:", data);
+      const handler = new PaymentConfirmedHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
 
-  socket.on("start_game", async (data: StartGameEvent) => {
+  socket.on(SocketEvents.START_GAME_REQUEST, async (data: StartGameEvent) => {
     console.log("start game:", data);
     const handler = new StartGameHandler(socket, io);
     await handler.handle(data);
   });
 
-  socket.on("move_piece_request", async (data: MovePieceEvent) => {
+  socket.on(SocketEvents.MOVE_PIECE_REQUEST, async (data: MovePieceEvent) => {
     console.log("move piece:", data);
     const handler = new MovePieceHandler(socket, io);
     await handler.handle(data);
   });
 
-  socket.on("end_game_request", async (data: EndGameRequest) => {
+  socket.on(SocketEvents.END_GAME_REQUEST, async (data: EndGameRequest) => {
     console.log("end game:", data);
     const handler = new EndGameHandler(socket, io);
     await handler.handle(data);

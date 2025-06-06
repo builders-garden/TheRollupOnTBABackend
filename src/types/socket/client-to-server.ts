@@ -1,12 +1,12 @@
 import type { Move } from "chess.js";
-import type { GameEndReason, GameMode, GameOption } from "../enums";
 import type { Participant, Payment } from "..";
+import type { GameMode, GameOption, GameEndReason } from "@prisma/client";
 
 export type CreateGameRequest = {
   game: {
     mode: GameMode;
     option: GameOption;
-    opponentId: string;
+    contractId: number;
   };
   participants: Participant[];
   payment: Payment;

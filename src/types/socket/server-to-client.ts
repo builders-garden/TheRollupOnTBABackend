@@ -1,16 +1,16 @@
 import type { Move } from "chess.js";
-import type { GameEndReason, GameStatus } from "../enums";
 import type { Participant } from "..";
+import type { GameState, GameEndReason } from "@prisma/client";
 
 export type CreateGameResponse = {
   gameId: string;
-  status: GameStatus;
+  status: GameState;
   participants: Participant[];
 };
 
 export type JoinGameResponse = {
   gameId: string;
-  status: GameStatus;
+  status: GameState;
   participants: Participant[];
 };
 

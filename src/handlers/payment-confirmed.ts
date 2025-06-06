@@ -3,14 +3,7 @@ import { SocketHandler } from "./socket-handler";
 import type { PaymentConfirmedEvent } from "../types";
 
 export class PaymentConfirmedHandler extends SocketHandler {
-  async handle({
-    gameId,
-    participantId,
-    amount,
-    currency,
-    txHash,
-    walletAddress,
-  }: PaymentConfirmedEvent) {
+  async handle({ gameId, participantId }: PaymentConfirmedEvent) {
     console.log(
       `[LOBBY] Participant ${participantId} confirmed stake in game ${gameId}`
     );
