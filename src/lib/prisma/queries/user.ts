@@ -3,6 +3,28 @@ import type { Prisma, User } from "@prisma/client";
 import { fetchUserFromNeynar } from "../../neynar";
 
 /**
+ * Get a user by their id.
+ *
+ * This function gets a user by their id.
+ * It takes an id and returns the user if found.
+ *
+ * @param id - The id of the user to get
+ * @returns The user if found, otherwise null
+ */
+export const getUserById = async (id: string): Promise<User | null> => {
+  const user = await prisma.user.findUnique({
+    where: { id },
+    include: {
+      statistics: true,
+    },
+  });
+
+  if (!user) return null;
+
+  return user;
+};
+
+/**
  * Get a user by their fid.
  *
  * This function gets a user by their fid.

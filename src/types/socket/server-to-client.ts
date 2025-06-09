@@ -1,4 +1,8 @@
-import type { GameState, GameEndReason } from "@prisma/client";
+import type {
+  GameState,
+  GameEndReason,
+  GameChatContentType,
+} from "@prisma/client";
 import type { Color, Square } from "chess.js";
 import { SocketEvents } from "../enums";
 import type { Participant } from "..";
@@ -17,17 +21,17 @@ export type JoinGameResponse = {
 
 export type PaymentConfirmedEvent = {
   gameId: string;
-  participantId: string;
+  userId: string;
 };
 
 export type ParticipantReadyEvent = {
   gameId: string;
-  participantId: string;
+  userId: string;
 };
 
 export type StartGameEvent = {
   gameId: string;
-  participantId: string;
+  userId: string;
 };
 
 export type MovePieceEvent = {
@@ -43,30 +47,47 @@ export type MovePieceEvent = {
 
 export type AcceptGameEndEvent = {
   gameId: string;
-  participantId: string;
+  userId: string;
   reason: GameEndReason;
 };
 
 export type GameEndedEvent = {
   gameId: string;
-  participantId: string;
+  userId: string;
   reason: GameEndReason;
 };
 
 export type ParticipantLeftEvent = {
   gameId: string;
-  participantId: string;
+  userId: string;
 };
 
 export type ParticipantJoinedEvent = {
   gameId: string;
-  participantId: string;
+  userId: string;
 };
 
-export type SendMessageEvent = {
-  gameId: string;
-  participantId: string;
+export type ErrorEvent = {
+  code: number;
+  userId?: string;
   message: string;
+};
+
+export type MessageReceivedEvent = {
+  gameId: string;
+  userId: string;
+  message: {
+    id: string;
+    content: string;
+    contentType: GameChatContentType;
+    createdAt: Date;
+    user: {
+      fid: number;
+      username: string;
+      displayName: string;
+      avatarUrl: string | null;
+    };
+  };
 };
 
 export type ServerToClientEvents = {
@@ -76,7 +97,7 @@ export type ServerToClientEvents = {
   [SocketEvents.PARTICIPANT_READY]: ParticipantReadyEvent;
   [SocketEvents.START_GAME]: StartGameEvent;
   [SocketEvents.MOVE_PIECE]: MovePieceEvent;
-  [SocketEvents.SEND_MESSAGE]: SendMessageEvent;
+  [SocketEvents.MESSAGE_RECEIVED]: MessageReceivedEvent;
   [SocketEvents.ACCEPT_GAME_END]: AcceptGameEndEvent;
   [SocketEvents.GAME_ENDED]: GameEndedEvent;
   [SocketEvents.PARTICIPANT_LEFT]: ParticipantLeftEvent;

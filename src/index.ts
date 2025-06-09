@@ -27,10 +27,12 @@ import type {
   JoinGameRequest,
   MovePieceRequest,
   PaymentConfirmedEvent,
+  MessageSendRequest,
   StartGameEvent,
 } from "./types";
 import { baseOrigins, localOrigins } from "./lib/cors";
 import { SocketEvents } from "./types/enums";
+import { GameChatMessagesHandler } from "./handlers/game-chat-messages";
 
 // Load environment variables
 dotenv.config();
@@ -75,6 +77,7 @@ setIOInstance(io);
 io.on("connection", (socket) => {
   console.log("0. client connected:", socket.id);
 
+  // Create game request
   socket.on(
     SocketEvents.CREATE_GAME_REQUEST,
     async (data: CreateGameRequest) => {
@@ -84,11 +87,13 @@ io.on("connection", (socket) => {
     }
   );
 
+  // Join game request
   socket.on(SocketEvents.JOIN_GAME_REQUEST, async (data: JoinGameRequest) => {
     console.log("joining chess game:", data);
     socket.broadcast.emit("join-game-response", data);
   });
 
+  // Payment confirmed request
   socket.on(
     SocketEvents.PAYMENT_CONFIRMED_REQUEST,
     async (data: PaymentConfirmedEvent) => {
@@ -98,24 +103,34 @@ io.on("connection", (socket) => {
     }
   );
 
+  // Start game request
   socket.on(SocketEvents.START_GAME_REQUEST, async (data: StartGameEvent) => {
     console.log("start game:", data);
     const handler = new StartGameHandler(socket, io);
     await handler.handle(data);
   });
 
+  // Move piece request
   socket.on(SocketEvents.MOVE_PIECE_REQUEST, async (data: MovePieceRequest) => {
     console.log("move piece:", data);
     const handler = new MovePieceHandler(socket, io);
     await handler.handle(data);
   });
 
+  // End game request
   socket.on(SocketEvents.END_GAME_REQUEST, async (data: EndGameRequest) => {
     console.log("end game:", data);
     const handler = new EndGameHandler(socket, io);
     await handler.handle(data);
   });
 
+  // Send message request
+  socket.on(SocketEvents.MESSAGE_SEND, async (data: MessageSendRequest) => {
+    console.log("send message:", data);
+    const handler = new GameChatMessagesHandler(socket, io);
+    await handler.handle(data);
+  });
+  // disconnect
   socket.on("disconnect", async () => {
     console.log("user disconnected:", socket.id);
     const handler = new DisconnectParticipantHandler(socket, io);

@@ -20,19 +20,19 @@ export type CreateGameRequest = {
 
 export type JoinGameRequest = {
   gameId: string;
-  participantId: string;
+  userId: string;
   payment: Payment;
 };
 
 export type PaymentConfirmedRequest = {
   gameId: string;
-  participantId: string;
+  userId: string;
   payment: Payment;
 };
 
 export type ParticipantReadyRequest = {
   gameId: string;
-  participantId: string;
+  userId: string;
 };
 
 export type MovePieceRequest = {
@@ -47,9 +47,9 @@ export type MovePieceRequest = {
   };
 };
 
-export type SendMessageRequest = {
+export type MessageSendRequest = {
   gameId: string;
-  participantId: string;
+  userId: string;
   message: {
     content: string;
     contentType: GameChatContentType;
@@ -58,7 +58,7 @@ export type SendMessageRequest = {
 
 export type EndGameRequest = {
   gameId: string;
-  participantId: string;
+  userId: string;
   reason: GameEndReason;
 };
 
@@ -68,6 +68,6 @@ export type ClientToServerEvents = {
   [SocketEvents.PAYMENT_CONFIRMED_REQUEST]: PaymentConfirmedRequest;
   [SocketEvents.PARTICIPANT_READY_REQUEST]: ParticipantReadyRequest;
   [SocketEvents.MOVE_PIECE_REQUEST]: MovePieceRequest;
-  [SocketEvents.SEND_MESSAGE_REQUEST]: SendMessageRequest;
+  [SocketEvents.MESSAGE_SEND]: MessageSendRequest;
   [SocketEvents.END_GAME_REQUEST]: EndGameRequest;
 };

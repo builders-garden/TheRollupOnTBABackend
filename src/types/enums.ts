@@ -47,7 +47,7 @@ export enum SocketEvents {
   START_GAME_REQUEST = "start_game_request",
   PARTICIPANT_READY_REQUEST = "participant_ready_request",
   MOVE_PIECE_REQUEST = "move_piece_request",
-  SEND_MESSAGE_REQUEST = "send_message_request",
+  MESSAGE_SEND = "message_send",
   END_GAME_REQUEST = "end_game_request",
   // server to client
   CREATE_GAME_RESPONSE = "create_game_response",
@@ -58,7 +58,7 @@ export enum SocketEvents {
   PARTICIPANT_JOINED = "participant_joined",
   START_GAME = "start_game",
   MOVE_PIECE = "move_piece",
-  SEND_MESSAGE = "send_message",
+  MESSAGE_RECEIVED = "message_received",
   ACCEPT_GAME_END = "accept_game_end",
   GAME_ENDED = "game_ended",
   ERROR = "error",
