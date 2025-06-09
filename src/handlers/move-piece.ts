@@ -1,31 +1,47 @@
-import { gameRoomManager } from "./game-room-manager";
 import { SocketHandler } from "./socket-handler";
-import type { MovePieceEvent } from "../types";
-import { getGameParticipantById } from "../lib/prisma/queries/game-participants";
-import { getGameById } from "../lib/prisma/queries/game";
+import type { MovePieceRequest } from "../types";
+import { getGameParticipant } from "../lib/prisma/queries/game-participants";
+import { getGameById, updateGame } from "../lib/prisma/queries/game";
+import { SocketEvents } from "../types/enums";
 
 export class MovePieceHandler extends SocketHandler {
-  async handle({ gameId, participantId, move }: MovePieceEvent) {
+  async handle({ gameId, userId, move }: MovePieceRequest) {
     console.log(
-      `[GAME] Participant ${participantId} moving piece from ${move.from} to ${move.to} in game ${gameId}`
+      `[GAME] Participant ${userId} moving piece from ${move.from} to ${move.to} in game ${gameId}`
     );
-
-    const room = await gameRoomManager.getGameRoom(gameId);
-    if (!room) return;
-
-    const game = await getGameById(gameId);
-    if (!game) return;
-
-    const participant = await getGameParticipantById(participantId);
-    if (!participant) return;
+    const [game, participant] = await Promise.all([
+      getGameById(gameId),
+      getGameParticipant(gameId, userId),
+    ]);
+    if (!game) {
+      console.error(`[GAME] Game ${gameId} not found`);
+      return;
+    }
+    if (!participant) {
+      console.error(`[GAME] Participant ${userId} not found`);
+      return;
+    }
 
     // TODO check if move is valid
     const validMove = true;
-    if (!validMove) return;
+    if (!validMove) {
+      console.error(
+        `[GAME] Invalid move from ${move.from} to ${move.to} in game ${gameId}`
+      );
+      return;
+    }
 
     // TODO update game board
-    // TODO update game participants
-    // TODO update game
+    const updatedGame = await updateGame(gameId, {
+      currentFen: move.fen,
+    });
+    console.log(`[GAME] Updated game: ${updatedGame}`);
+
     // TODO emit move to all participants
+    this.emitToGame(gameId, SocketEvents.MOVE_PIECE, {
+      gameId,
+      userId,
+      move,
+    });
   }
 }

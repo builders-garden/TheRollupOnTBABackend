@@ -60,12 +60,11 @@ export async function createGame({
   const creator = participants.find((p) => p.isCreator);
   const opponent = participants.find((p) => !p.isCreator);
   if (!creator || !opponent) throw new Error("Participants not found");
-  const creatorUser = await getUserByFid(creator.participantFid);
+  const [creatorUser, opponentUser] = await Promise.all([
+    getUserByFid(creator.participantFid),
+    getOrCreateUserByFid(opponent.participantFid, creator.participantFid),
+  ]);
   if (!creatorUser) throw new Error("Creator user not found");
-  const opponentUser = await getOrCreateUserByFid(
-    opponent.participantFid,
-    creator.participantFid
-  );
   if (!opponentUser) throw new Error("Opponent user not found");
 
   const randomNumber = Math.random();

@@ -25,7 +25,7 @@ import type {
   CreateGameRequest,
   EndGameRequest,
   JoinGameRequest,
-  MovePieceEvent,
+  MovePieceRequest,
   PaymentConfirmedEvent,
   StartGameEvent,
 } from "./types";
@@ -104,7 +104,7 @@ io.on("connection", (socket) => {
     await handler.handle(data);
   });
 
-  socket.on(SocketEvents.MOVE_PIECE_REQUEST, async (data: MovePieceEvent) => {
+  socket.on(SocketEvents.MOVE_PIECE_REQUEST, async (data: MovePieceRequest) => {
     console.log("move piece:", data);
     const handler = new MovePieceHandler(socket, io);
     await handler.handle(data);

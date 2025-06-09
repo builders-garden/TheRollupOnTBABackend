@@ -7,15 +7,17 @@ import type { GameParticipant, Prisma } from "@prisma/client";
  * This function gets a game participant by their id.
  * It takes an id and returns the game participant if found.
  *
- * @param id - The id of the game participant to get
+ * @param gameId - The id of the game
+ * @param userId - The id of the user
  * @returns The game participant if found, otherwise null
  */
-export const getGameParticipantById = async (
-  id: string
+export const getGameParticipant = async (
+  gameId: string,
+  userId: string
 ): Promise<GameParticipant | null> => {
-  if (!id) return null;
+  if (!userId || !gameId) return null;
   return prisma.gameParticipant.findUnique({
-    where: { id },
+    where: { userId_gameId: { userId, gameId } },
     include: {
       user: true,
       game: true,
@@ -29,16 +31,18 @@ export const getGameParticipantById = async (
  * This function updates a game participant.
  * It takes an id and a set of updates to apply to the game participant.
  *
- * @param id - The id of the game participant to update
+ * @param gameId - The id of the game
+ * @param userId - The id of the user
  * @param gameParticipant - The updates to apply to the game participant
  * @returns The updated game participant
  */
 export const updateGameParticipant = async (
-  id: string,
+  gameId: string,
+  userId: string,
   gameParticipant: Prisma.GameParticipantUpdateInput
 ): Promise<Omit<GameParticipant, "id" | "createdAt" | "updatedAt">> => {
   return prisma.gameParticipant.update({
-    where: { id },
+    where: { userId_gameId: { userId, gameId } },
     data: gameParticipant,
   });
 };

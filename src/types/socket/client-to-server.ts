@@ -1,12 +1,12 @@
-import type { Move } from "chess.js";
-import type { Participant, Payment } from "..";
 import type {
   GameMode,
   GameOption,
   GameEndReason,
   GameChatContentType,
 } from "@prisma/client";
+import type { Color, Square } from "chess.js";
 import { SocketEvents } from "../enums";
+import type { Participant, Payment } from "..";
 
 export type CreateGameRequest = {
   game: {
@@ -37,8 +37,14 @@ export type ParticipantReadyRequest = {
 
 export type MovePieceRequest = {
   gameId: string;
-  participantId: string;
-  move: Move;
+  userId: string;
+  move: {
+    color: Color;
+    from: Square;
+    to: Square;
+    fen: string;
+    promotion?: string;
+  };
 };
 
 export type SendMessageRequest = {

@@ -112,7 +112,6 @@ model User {
 }
 
 model GameParticipant {
-  id       String  @id @default(ulid())
   gameId   String
   userId   String
   socketId String? // socket id of the participant
@@ -135,6 +134,7 @@ model GameParticipant {
   game Game @relation(fields: [gameId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   user User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
+  @@id([userId, gameId])
   @@index([gameId], map: "idx_game_participants_gameId")
   @@index([userId], map: "idx_game_participants_userId")
   @@map("game_participants")

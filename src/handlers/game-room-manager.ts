@@ -70,16 +70,16 @@ export class GameRoomManager {
 
   public async updateParticipantReady(
     gameId: string,
-    participantID: string,
+    userId: string,
     ready: boolean
   ): Promise<void> {
     const room = this.getGameRoom(gameId);
     if (room) {
-      const participant = room.participants.get(participantID);
+      const participant = room.participants.get(userId);
       if (participant) {
         participant.ready = ready;
-        room.participants.set(participantID, participant);
-        await updateGameParticipant(participantID, {
+        room.participants.set(userId, participant);
+        await updateGameParticipant(gameId, userId, {
           status: ready
             ? GameParticipantStatus.READY
             : GameParticipantStatus.WAITING,
