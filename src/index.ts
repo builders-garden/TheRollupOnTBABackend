@@ -37,8 +37,19 @@ dotenv.config();
 
 const app = express();
 
+const allowedOrigins =
+  env.NODE_ENV === "development"
+    ? [...baseOrigins, ...localOrigins]
+    : baseOrigins;
+
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ["GET", "POST", "OPTIONS"],
+  })
+);
 app.use(cookieParserMiddleware());
 app.use(express.json());
 app.use(helmet());
@@ -47,10 +58,6 @@ app.use(responseMiddleware);
 
 // Create HTTP server to attach socket.io
 const httpServer = http.createServer(app);
-const allowedOrigins =
-  env.NODE_ENV === "development"
-    ? [...baseOrigins, ...localOrigins]
-    : baseOrigins;
 
 // Initialize Socket.IO server
 const io = new SocketIOServer(httpServer, {
