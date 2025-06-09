@@ -25,7 +25,8 @@ enum GameResult {
 
 enum GameEndReason {
   // 1. i win: checkmate
-  CHECKMATE
+  WHITE_CHECKMATE
+  BLACK_CHECKMATE
   // 2. i lose: resign
   WHITE_RESIGNED
   BLACK_RESIGNED
@@ -33,15 +34,20 @@ enum GameEndReason {
   WHITE_TIMEOUT
   BLACK_TIMEOUT
   // 4. draw: stalemate
-  STALEMATE
+  WHITE_STALEMATE
+  BLACK_STALEMATE
   // 5. draw: insufficient material
-  INSUFFICIENT_MATERIAL
+  WHITE_INSUFFICIENT_MATERIAL
+  BLACK_INSUFFICIENT_MATERIAL
   // 6. draw: threefold repetition
-  THREEFOLD_REPETITION
+  WHITE_THREEFOLD_REPETITION
+  BLACK_THREEFOLD_REPETITION
   // 7. draw: fifty move rule
-  FIFTY_MOVE_RULE
+  WHITE_FIFTY_MOVE_RULE
+  BLACK_FIFTY_MOVE_RULE
   // 8. draw: agreement
-  AGREEMENT
+  WHITE_AGREEMENT
+  BLACK_AGREEMENT
   // 9. other
   OTHER
 }
