@@ -21,7 +21,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@farcaster/frame-sdk": "^0.0.53",
+    "@farcaster/frame-sdk": "^0.0.61",
     "@libsql/client": "^0.15.8",
     "@prisma/adapter-libsql": "^6.9.0",
     "@prisma/client": "^6.9.0",
