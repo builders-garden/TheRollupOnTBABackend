@@ -40,10 +40,11 @@ export const updateGameParticipant = async (
   gameId: string,
   userId: string,
   gameParticipant: Prisma.GameParticipantUpdateInput
-): Promise<Omit<GameParticipant, "id" | "createdAt" | "updatedAt">> => {
+) => {
   return prisma.gameParticipant.update({
     where: { userId_gameId: { userId, gameId } },
     data: gameParticipant,
+    include: { game: { include: { participants: true } } },
   });
 };
 

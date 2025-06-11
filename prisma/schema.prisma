@@ -11,7 +11,8 @@ datasource db {
 // ENUMS
 
 enum GameState {
-  PENDING
+  CREATED
+  WAITING
   ACTIVE
   PAUSED
   ENDED
@@ -46,8 +47,8 @@ enum GameEndReason {
   WHITE_FIFTY_MOVE_RULE
   BLACK_FIFTY_MOVE_RULE
   // 8. draw: agreement
-  WHITE_AGREEMENT
-  BLACK_AGREEMENT
+  WHITE_REQUESTED_DRAW
+  BLACK_REQUESTED_DRAW
   // 9. other
   OTHER
 }
@@ -156,7 +157,7 @@ model Game {
 
   wageAmount String @default("1") // Amount in USDC
 
-  gameState     GameState      @default(PENDING)
+  gameState     GameState      @default(CREATED)
   gameResult    GameResult?
   gameEndReason GameEndReason?
   gameEndTxHash String? // tx hash of the game end

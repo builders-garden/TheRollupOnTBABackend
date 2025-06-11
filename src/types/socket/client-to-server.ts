@@ -62,6 +62,12 @@ export type EndGameRequest = {
   reason: GameEndReason;
 };
 
+export type EndGameDrawResponse = {
+  gameId: string;
+  userId: string;
+  accepted: boolean;
+};
+
 export type ClientToServerEvents = {
   [SocketEvents.CREATE_GAME_REQUEST]: CreateGameRequest;
   [SocketEvents.JOIN_GAME_REQUEST]: JoinGameRequest;

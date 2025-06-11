@@ -17,7 +17,9 @@ import {
   CreateGameHandler,
   DisconnectParticipantHandler,
   EndGameHandler,
+  GameChatMessagesHandler,
   MovePieceHandler,
+  ParticipantReadyHandler,
   PaymentConfirmedHandler,
   StartGameHandler,
 } from "./handlers";
@@ -29,10 +31,10 @@ import type {
   PaymentConfirmedEvent,
   MessageSendRequest,
   StartGameEvent,
+  ParticipantReadyRequest,
 } from "./types";
 import { baseOrigins, localOrigins } from "./lib/cors";
 import { SocketEvents } from "./types/enums";
-import { GameChatMessagesHandler } from "./handlers/game-chat-messages";
 
 // Load environment variables
 dotenv.config();
@@ -83,6 +85,16 @@ io.on("connection", (socket) => {
     async (data: CreateGameRequest) => {
       console.log("create game request:", data);
       const handler = new CreateGameHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
+
+  // Participant ready request
+  socket.on(
+    SocketEvents.PARTICIPANT_READY_REQUEST,
+    async (data: ParticipantReadyRequest) => {
+      console.log("participant ready:", data);
+      const handler = new ParticipantReadyHandler(socket, io);
       await handler.handle(data);
     }
   );

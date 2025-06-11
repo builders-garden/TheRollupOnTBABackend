@@ -2,6 +2,7 @@ import type {
   GameState,
   GameEndReason,
   GameChatContentType,
+  GameParticipantStatus,
 } from "@prisma/client";
 import type { Color, Square } from "chess.js";
 import { SocketEvents } from "../enums";
@@ -27,11 +28,12 @@ export type PaymentConfirmedEvent = {
 export type ParticipantReadyEvent = {
   gameId: string;
   userId: string;
+  status: GameParticipantStatus;
 };
 
 export type StartGameEvent = {
   gameId: string;
-  userId: string;
+  gameState: GameState;
 };
 
 export type MovePieceEvent = {
@@ -60,6 +62,7 @@ export type GameEndedEvent = {
 export type ParticipantLeftEvent = {
   gameId: string;
   userId: string;
+  status: GameParticipantStatus;
 };
 
 export type ParticipantJoinedEvent = {
