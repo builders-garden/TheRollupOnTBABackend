@@ -1,5 +1,6 @@
-import type { GameChatContentType } from "@prisma/client";
+import { GameChatContentType } from "@prisma/client";
 import { prisma } from "../client";
+import type { MessageSentEvent } from "../../../types/socket/client-to-server";
 
 /**
  * Get all spectators for a game.
@@ -27,34 +28,50 @@ export const getGameChatMessages = async (gameId: string) => {
  * @param message - The message to create
  * @returns The created game chat message
  */
-export const createGameChatMessage = async (
-  gameId: string,
-  userId: string,
-  message: {
-    content: string;
-    contentType: GameChatContentType;
+export const createGameChatMessage = async ({
+  gameId,
+  userId,
+  message,
+}: MessageSentEvent) => {
+  if (!gameId || !userId || !message.contentType) return;
+  if (message.contentType === GameChatContentType.TIP) {
+    if (!message.tip) return;
+  } else {
+    if (!message.content) return;
   }
-) => {
-  if (!gameId || !userId || !message.content || !message.contentType) return;
 
-  const x = await prisma.gameChatMessage.create({
+  return await prisma.gameChatMessage.create({
     data: {
       gameId,
       userId,
       content: message.content,
       contentType: message.contentType,
+      tipId: message.tip?.tipId,
+      tipChainId: message.tip?.tipChainId,
+      tipTxHash: message.tip?.tipTxHash,
+      tipAmount: message.tip?.tipAmount,
     },
     include: {
       user: {
         select: {
+          id: true,
           fid: true,
           username: true,
           displayName: true,
           avatarUrl: true,
         },
       },
+      gameTip: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          slug: true,
+          imageUrl: true,
+          category: true,
+          price: true,
+        },
+      },
     },
   });
-  console.log("x", x);
-  return x;
 };

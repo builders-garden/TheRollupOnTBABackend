@@ -1,5 +1,5 @@
 import { prisma } from "../client";
-import type { CreateGameRequest } from "../../../types";
+import type { CreateGameRequestEvent } from "../../../types";
 import {
   GameParticipantColor,
   GameParticipantStatus,
@@ -56,7 +56,7 @@ export async function createGame({
   payment,
   participants,
   creatorSocketId,
-}: CreateGameRequest & { creatorSocketId: string }) {
+}: CreateGameRequestEvent & { creatorSocketId: string }) {
   const creator = participants.find((p) => p.isCreator);
   const opponent = participants.find((p) => !p.isCreator);
   if (!creator || !opponent) throw new Error("Participants not found");

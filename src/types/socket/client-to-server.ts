@@ -5,10 +5,11 @@ import type {
   GameChatContentType,
 } from "@prisma/client";
 import type { Color, Square } from "chess.js";
-import { SocketEvents } from "../enums";
+import { ClientToServerSocketEvents } from "../enums";
 import type { Participant, Payment } from "..";
 
-export type CreateGameRequest = {
+// 1. Game Creation
+export type CreateGameRequestEvent = {
   game: {
     mode: GameMode;
     option: GameOption;
@@ -18,24 +19,28 @@ export type CreateGameRequest = {
   payment: Payment;
 };
 
-export type JoinGameRequest = {
+// 2. Game Joining
+export type JoinGameRequestEvent = {
   gameId: string;
   userId: string;
   payment: Payment;
 };
 
-export type PaymentConfirmedRequest = {
+// 2.b Payment Confirmed
+export type PaymentConfirmedEvent = {
   gameId: string;
   userId: string;
   payment: Payment;
 };
 
-export type ParticipantReadyRequest = {
+// 3. Game Starting
+export type ParticipantReadyEvent = {
   gameId: string;
   userId: string;
 };
 
-export type MovePieceRequest = {
+// 5. Game Playing
+export type MovePieceEvent = {
   gameId: string;
   userId: string;
   move: {
@@ -47,33 +52,49 @@ export type MovePieceRequest = {
   };
 };
 
-export type MessageSendRequest = {
-  gameId: string;
-  userId: string;
-  message: {
-    content: string;
-    contentType: GameChatContentType;
-  };
-};
-
-export type EndGameRequest = {
+// 6. Game Ending: Resign or Draw request
+export type EndGameRequestEvent = {
   gameId: string;
   userId: string;
   reason: GameEndReason;
 };
 
-export type EndGameDrawResponse = {
+// 6.b Game Ending: Accept game end response
+export type AcceptGameEndResponseEvent = {
   gameId: string;
   userId: string;
   accepted: boolean;
 };
 
+// 8. Extras: Messages
+export type MessageSentEvent = {
+  gameId: string;
+  userId: string;
+  message: {
+    contentType: GameChatContentType;
+    content?: string;
+    tip?: {
+      tipId: string;
+      tipChainId: number;
+      tipTxHash: string;
+      tipAmount: number;
+    };
+  };
+};
+
+// 9. Extras: Spectators
+export type SpectatorJoinEvent = {
+  gameId: string;
+  userId: string;
+};
+
 export type ClientToServerEvents = {
-  [SocketEvents.CREATE_GAME_REQUEST]: CreateGameRequest;
-  [SocketEvents.JOIN_GAME_REQUEST]: JoinGameRequest;
-  [SocketEvents.PAYMENT_CONFIRMED_REQUEST]: PaymentConfirmedRequest;
-  [SocketEvents.PARTICIPANT_READY_REQUEST]: ParticipantReadyRequest;
-  [SocketEvents.MOVE_PIECE_REQUEST]: MovePieceRequest;
-  [SocketEvents.MESSAGE_SEND]: MessageSendRequest;
-  [SocketEvents.END_GAME_REQUEST]: EndGameRequest;
+  [ClientToServerSocketEvents.CREATE_GAME_REQUEST]: CreateGameRequestEvent;
+  [ClientToServerSocketEvents.JOIN_GAME_REQUEST]: JoinGameRequestEvent;
+  [ClientToServerSocketEvents.PAYMENT_CONFIRMED]: PaymentConfirmedEvent;
+  [ClientToServerSocketEvents.PARTICIPANT_READY]: ParticipantReadyEvent;
+  [ClientToServerSocketEvents.MOVE_PIECE]: MovePieceEvent;
+  [ClientToServerSocketEvents.MESSAGE_SENT]: MessageSentEvent;
+  [ClientToServerSocketEvents.SPECTATOR_JOIN]: SpectatorJoinEvent;
+  [ClientToServerSocketEvents.END_GAME_REQUEST]: EndGameRequestEvent;
 };

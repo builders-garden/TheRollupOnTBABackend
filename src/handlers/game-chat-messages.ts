@@ -1,12 +1,12 @@
 import { SocketHandler } from "./socket-handler";
-import type { MessageSendRequest } from "../types";
+import type { MessageSentEvent } from "../types";
 import { getGameById } from "../lib/prisma/queries/game";
-import { SocketEvents } from "../types/enums";
+import { ServerToClientSocketEvents } from "../types/enums";
 import { createGameChatMessage } from "../lib/prisma/queries/game-chat-messages";
 import { getUserById } from "../lib/prisma/queries";
 
 export class GameChatMessagesHandler extends SocketHandler {
-  async handle({ gameId, userId, message }: MessageSendRequest) {
+  async handle({ gameId, userId, message }: MessageSentEvent) {
     console.log(
       `[GAME] Participant ${userId} sending message in game ${gameId}`
     );
@@ -22,9 +22,14 @@ export class GameChatMessagesHandler extends SocketHandler {
       console.error(`[GAME] Participant ${userId} not found`);
       return;
     }
-
     // TODO update game board
-    const newMessage = await createGameChatMessage(gameId, userId, message);
+
+    // save message to db
+    const newMessage = await createGameChatMessage({
+      gameId,
+      userId,
+      message,
+    });
     if (!newMessage) {
       console.error(`[GAME] Failed to create message for game ${gameId}`);
       return;
@@ -32,7 +37,7 @@ export class GameChatMessagesHandler extends SocketHandler {
     console.log(`[GAME] Created message: ${newMessage}`);
 
     // TODO emit move to all participants
-    this.emitToGame(gameId, SocketEvents.MESSAGE_RECEIVED, {
+    this.emitToGame(gameId, ServerToClientSocketEvents.MESSAGE_SENT_ACK, {
       gameId,
       userId,
       message: {
@@ -40,13 +45,8 @@ export class GameChatMessagesHandler extends SocketHandler {
         content: newMessage.content,
         contentType: newMessage.contentType,
         createdAt: newMessage.createdAt,
-        user: {
-          userId: user.id,
-          fid: user.fid,
-          username: user.username,
-          displayName: user.displayName,
-          avatarUrl: user.avatarUrl,
-        },
+        user: newMessage.user,
+        gameTip: newMessage.gameTip,
       },
     });
   }

@@ -14,6 +14,7 @@ import { handleError, handleNotFound } from "./middleware/error.middleware";
 
 import { setIOInstance } from "./lib/socket";
 import {
+  AcceptGameEndResponseHandler,
   CreateGameHandler,
   DisconnectParticipantHandler,
   EndGameHandler,
@@ -21,20 +22,19 @@ import {
   MovePieceHandler,
   ParticipantReadyHandler,
   PaymentConfirmedHandler,
-  StartGameHandler,
 } from "./handlers";
 import type {
-  CreateGameRequest,
-  EndGameRequest,
-  JoinGameRequest,
-  MovePieceRequest,
+  CreateGameRequestEvent,
+  EndGameRequestEvent,
+  JoinGameRequestEvent,
+  MovePieceEvent,
+  MessageSentEvent,
+  ParticipantReadyEvent,
+  AcceptGameEndResponseEvent,
   PaymentConfirmedEvent,
-  MessageSendRequest,
-  StartGameEvent,
-  ParticipantReadyRequest,
 } from "./types";
 import { baseOrigins, localOrigins } from "./lib/cors";
-import { SocketEvents } from "./types/enums";
+import { ClientToServerSocketEvents } from "./types/enums";
 
 // Load environment variables
 dotenv.config();
@@ -79,35 +79,28 @@ setIOInstance(io);
 io.on("connection", (socket) => {
   console.log("0. client connected:", socket.id);
 
-  // Create game request
+  // 1. Game creation request
   socket.on(
-    SocketEvents.CREATE_GAME_REQUEST,
-    async (data: CreateGameRequest) => {
+    ClientToServerSocketEvents.CREATE_GAME_REQUEST,
+    async (data: CreateGameRequestEvent) => {
       console.log("create game request:", data);
       const handler = new CreateGameHandler(socket, io);
       await handler.handle(data);
     }
   );
 
-  // Participant ready request
+  // 2. Game joining request
   socket.on(
-    SocketEvents.PARTICIPANT_READY_REQUEST,
-    async (data: ParticipantReadyRequest) => {
-      console.log("participant ready:", data);
-      const handler = new ParticipantReadyHandler(socket, io);
-      await handler.handle(data);
+    ClientToServerSocketEvents.JOIN_GAME_REQUEST,
+    async (data: JoinGameRequestEvent) => {
+      console.log("joining chess game:", data);
+      socket.broadcast.emit("join-game-response", data);
     }
   );
 
-  // Join game request
-  socket.on(SocketEvents.JOIN_GAME_REQUEST, async (data: JoinGameRequest) => {
-    console.log("joining chess game:", data);
-    socket.broadcast.emit("join-game-response", data);
-  });
-
-  // Payment confirmed request
+  // 2.b Payment Confirmed
   socket.on(
-    SocketEvents.PAYMENT_CONFIRMED_REQUEST,
+    ClientToServerSocketEvents.PAYMENT_CONFIRMED,
     async (data: PaymentConfirmedEvent) => {
       console.log("payment confirmed:", data);
       const handler = new PaymentConfirmedHandler(socket, io);
@@ -115,33 +108,57 @@ io.on("connection", (socket) => {
     }
   );
 
-  // Start game request
-  socket.on(SocketEvents.START_GAME_REQUEST, async (data: StartGameEvent) => {
-    console.log("start game:", data);
-    const handler = new StartGameHandler(socket, io);
-    await handler.handle(data);
-  });
+  // 3. Game starting - Participant ready request
+  socket.on(
+    ClientToServerSocketEvents.PARTICIPANT_READY,
+    async (data: ParticipantReadyEvent) => {
+      console.log("participant ready:", data);
+      const handler = new ParticipantReadyHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
 
-  // Move piece request
-  socket.on(SocketEvents.MOVE_PIECE_REQUEST, async (data: MovePieceRequest) => {
-    console.log("move piece:", data);
-    const handler = new MovePieceHandler(socket, io);
-    await handler.handle(data);
-  });
+  // 4. Start Game is a server to client event ==> no need to handle it here
 
-  // End game request
-  socket.on(SocketEvents.END_GAME_REQUEST, async (data: EndGameRequest) => {
-    console.log("end game:", data);
-    const handler = new EndGameHandler(socket, io);
-    await handler.handle(data);
-  });
+  // 5. Game playing - Move piece event
+  socket.on(
+    ClientToServerSocketEvents.MOVE_PIECE,
+    async (data: MovePieceEvent) => {
+      console.log("move piece:", data);
+      const handler = new MovePieceHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
+
+  // 6. Game ending - End game request for both resign or draw
+  socket.on(
+    ClientToServerSocketEvents.END_GAME_REQUEST,
+    async (data: EndGameRequestEvent) => {
+      console.log("end game:", data);
+      const handler = new EndGameHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
+
+  // 6.b Game ending - Accept game end response (a client can accept or reject the request to draw)
+  socket.on(
+    ClientToServerSocketEvents.ACCEPT_GAME_END_RESPONSE,
+    async (data: AcceptGameEndResponseEvent) => {
+      console.log("accept game end response:", data);
+      const handler = new AcceptGameEndResponseHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
 
   // Send message request
-  socket.on(SocketEvents.MESSAGE_SEND, async (data: MessageSendRequest) => {
-    console.log("send message:", data);
-    const handler = new GameChatMessagesHandler(socket, io);
-    await handler.handle(data);
-  });
+  socket.on(
+    ClientToServerSocketEvents.MESSAGE_SENT,
+    async (data: MessageSentEvent) => {
+      console.log("send message:", data);
+      const handler = new GameChatMessagesHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
   // disconnect
   socket.on("disconnect", async () => {
     console.log("user disconnected:", socket.id);

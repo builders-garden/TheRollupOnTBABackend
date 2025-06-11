@@ -1,3 +1,4 @@
+export * from "./accept-end-game-response";
 export * from "./create-game";
 export * from "./disconnect-participant";
 export * from "./end-game";
@@ -5,5 +6,4 @@ export * from "./game-chat-messages";
 export * from "./move-piece";
 export * from "./participant-ready";
 export * from "./payment-confirmed";
-export * from "./start-game";
 export * from "./socket-handler";

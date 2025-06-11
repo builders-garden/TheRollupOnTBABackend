@@ -29,39 +29,38 @@ export enum PaymentStatus {
   BOUNCED = "bounced",
 }
 
-export enum GameEndReason {
-  CHECKMATE = "checkmate",
-  RESIGNATION = "resignation",
-  TIME_OUT = "time_out",
-  AGREEMENT = "agreement",
-  STALEMATE = "stalemate",
-  THREEFOLD_REPETITION = "threefold_repetition",
-  FIFTY_MOVE_RULE = "fifty_move_rule",
+// client to server
+export enum ClientToServerSocketEvents {
+  CREATE_GAME_REQUEST = "create_game_request", // 1. create game
+  JOIN_GAME_REQUEST = "join_game_request", // 2. join game
+  PAYMENT_CONFIRMED = "payment_confirmed", // 3. payment confirmed
+  PARTICIPANT_READY = "participant_ready", // 5. participant ready
+  MOVE_PIECE = "move_piece", // 6. move piece
+  END_GAME_REQUEST = "end_game_request", // 7. end game (resign or request draw)
+  ACCEPT_GAME_END_RESPONSE = "accept_game_end_response", // 8. accept game end response
+  MESSAGE_SENT = "message_sent", // 9. message sent (text, image or tip)
+  SPECTATOR_JOIN = "spectator_join", // 10. spectator join
 }
 
-export enum SocketEvents {
-  // client to server
-  CREATE_GAME_REQUEST = "create_game_request",
-  JOIN_GAME_REQUEST = "join_game_request",
-  PAYMENT_CONFIRMED_REQUEST = "payment_confirmed_request",
-  START_GAME_REQUEST = "start_game_request",
-  PARTICIPANT_READY_REQUEST = "participant_ready_request",
-  MOVE_PIECE_REQUEST = "move_piece_request",
-  MESSAGE_SEND = "message_send",
-  END_GAME_REQUEST = "end_game_request",
-  // server to client
-  CREATE_GAME_RESPONSE = "create_game_response",
-  JOIN_GAME_RESPONSE = "join_game_response",
-  PAYMENT_CONFIRMED = "payment_confirmed",
-  PARTICIPANT_READY = "participant_ready",
-  PARTICIPANT_LEFT = "participant_left",
-  PARTICIPANT_JOINED = "participant_joined",
-  START_GAME = "start_game",
-  MOVE_PIECE = "move_piece",
-  MESSAGE_RECEIVED = "message_received",
-  ACCEPT_GAME_END = "accept_game_end",
-  GAME_ENDED = "game_ended",
-  ERROR = "error",
+// server to client
+export enum ServerToClientSocketEvents {
+  CREATE_GAME_RESPONSE = "create_game_response", // 1. create game
+  JOIN_GAME_RESPONSE = "join_game_response", // 2. join game
+  PAYMENT_CONFIRMED_ACK = "payment_confirmed_ack", // 2.b payment confirmed acknowledged
+  PARTICIPANT_READY_ACK = "participant_ready_ack", // 3. participant ready acknowledged
+  START_GAME = "start_game", // 4. start game
+  PARTICIPANT_LEFT = "participant_left", // 5. participant left
+  PARTICIPANT_JOINED = "participant_joined", // 6. participant joined
+  MOVE_PIECE_ACK = "move_piece_ack", // 7. move piece acknowledged
+  ACCEPT_GAME_END = "accept_game_end", // 8. accept game end (ask other player to accept draw)
+  GAME_ENDED = "game_ended", // 9. game ended (either via resign or draw request accepted)
+  RESUME_GAME = "resume_game", // 10. resume game (after draw request rejected)
+  // extra
+  MESSAGE_SENT_ACK = "message_sent_ack", // 11. message sent acknowledged
+  SPECTATOR_JOIN_ACK = "spectator_join_ack", // 12. spectator join acknowledged
+  // other
+  ERROR = "error", // 13. error
+  BANNED = "banned", // 14. user found cheating ==> banned
 }
 
 export const GAME_MODE_OPTIONS = {

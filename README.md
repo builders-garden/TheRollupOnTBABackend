@@ -115,106 +115,105 @@ See [LICENSE.md](./LICENSE.md)
 
 Explanation of the websocket events based on the flow of the game.
 
-## Game Creation
+## 1. Game Creation
 
-## Against a friend
+## 1.a Against a friend
 
-- `CreateGameRequest`: Client sends a request to create a game with an opponent
-- `CreateGameResponse`: Server sends a response to the client with the game id and status.
+- `create_game_request`: Client sends a request to create a game with an opponent
+- `create_game_response`: Server sends a response to the client with the game id and status.
 - The client now can share the game id with the opponent through the app, either via a DC or a public cast.
 - if the opponent has the miniapp saved, he will receive a notification to join the game.
 
 
-## Against a random opponent
+## 1.b Against a random opponent
 
 - TBD
 
 
-## Game Joining
+## 2. Game Joining
 
 Once an opponent joins the game, it sends a `JoinGameRequest` to the server.
 
-- `JoinGameRequest`: Client sends a request to join a game.
-- `JoinGameResponse`: Server sends a response to the client with the game id and status.
-- The opponent can pay the requested amount to join the game.
-- Once the payment is confirmed, the server sends a `PaymentConfirmedEvent` to the client.
+- `join_game_request`: Client sends a request to join a game.
+- `join_game_response`: Server sends a response to the client with the game id and status.
+- `payment_confirmed`: The opponent send this once he has paid the requested amount to join the game.
+- `payment_confirmed_ack`: Once the payment is confirmed, the server sends a `payment_confirmed_ack` to the client.
 - The client now can start the game.
 
-## Game Starting
+## 3. Game Starting
 
-- `ParticipantReadyRequest`: Client sends a request to indicate that the participant is ready to start the game.
-- `ParticipantReadyEvent`: Server sends a response to the client with the game id and status.
-- The server now can start the game.
+- `participant_ready`: Client sends a request to indicate that the participant is ready to start the game.
+- `participant_ready_ack`: Server sends a response to the client with the game id and status.
 
-## Game Playing
 
-- `MovePieceRequest`: Client sends a request to move a piece.
-- `MovePieceEvent`: Server sends a response to the client with the move.
+## 4. Start Game
+
+- `start_game`: Once all the participants are ready, the server sends a `start_game` to the client with the game id and status.
+
+## 5. Game Playing
+
+- `move_piece`: Client sends a request to move a piece.
+- `move_piece_ack`: Server sends a response to the client with the move.
 - The server now can update the game board and check if the move is valid.
-- if the move is valid, the server sends a `MovePieceEvent` to the client with the move.
-- if the move is invalid, the server sends a `ErrorEvent` to the client with the error message and a request to undo the move on the client side.
-- if the game is at an end state, the server sends a `GameEndedEvent` to the client with the game id and end game reason.
+- if the move is valid, the server sends a `move_piece_ack` to the client with the move.
+- if the move is invalid, the server sends a `error` to the client with the error message and a request to undo the move on the client side.
+- if the game is at an end state, the server sends a `game_ended` to the client with the game id and end game reason.
 
-## Game Ending
+## 6. Game Ending
 
 Any participant can end the game, either by resigning or by requesting a draw.
 
-### Resigning
+### 6.a Resigning
 
-- `EndGameRequest`: Client sends a request to end the game.
-- `GameEndedEvent`: Server sends a response to all participants with the game id and status.
+- `end_game_request`: Client sends a request to end the game.
+- `game_ended`: Server sends a response to all participants with the game id and status.
 - The server now can update the game board and check if the game is ended.
 
-### Requesting a Draw
+### 6.b Requesting a Draw
 
-- `EndGameRequest`: Client sends a request to end the game with **COLOR_REQUESTED_DRAW** as reason.
-- `AcceptGameEndEvent`: The server sends this message to the other participant with the game id and status.
-- `AcceptGameEndResponse`: The other participant answer back, either accepting or rejecting the draw request.
-- if the other participant accepts the draw request, the server sends a `GameEndedEvent` to the other participant with the game id and status.
-- if the other participant rejects the draw request, the server sends a `ResumeGameEvent` to the client with the game id and status telling all the players to resume the game.
+- `end_game_request`: Client sends a request to end the game with **COLOR_REQUESTED_DRAW** as reason.
+- `accept_game_end`: The server sends this message to the other participant with the game id and status.
+- `accept_game_end_response`: The other participant answer back, either accepting or rejecting the draw request.
+- if the other participant accepts the draw request, the server sends a `game_ended` to the other participant with the game id and status.
+- if the other participant rejects the draw request, the server sends a `resume_game` to the client with the game id and status telling all the players to resume the game.
 
 
-## Game Paused
+## 7. Game Paused
 
 If a user disconnects (close app, drop connection, etc.), the game continues up to the participant remaining time.
 
-- `ParticipantLeftEvent`: The server notifies the client that the opponent left the game.
-- `ParticipantJoinedEvent`: The server notifies the client that the opponent joined the game.
+- `participant_left`: The server notifies the client that the opponent left the game.
+- `participant_joined`: The server notifies the client that the opponent joined the game.
 
 ## Extras
-### Messages
+
+### 8. Messages
 
 Any user watching or playing a game can send messages to the game chat.
+A message can be a text, an image or a tip.
 
-- `MessageSendRequest`: Client sends a request to send a message to the game chat.
-- `MessageReceivedEvent`: Server sends a response to the client with the message.
+- `message_sent`: Client sends a request to send a message to the game chat.
+- `message_sent_ack`: Server sends a response to the client with the message.
 
-### Spectators
+### 9. Spectators
 
 Spectators can join a game to watch the game.
 
-- `SpectatorJoinRequest`: Client sends a request to join a game as a spectator.
-- `SpectatorJoinResponse`: Server sends a response to the client with the game id and status.
+- `spectator_join`: Client sends a request to join a game as a spectator.
+- `spectator_join_ack`: Server sends a response to the client with the game id and status.
 - The client now can watch the game.
 
-### Tips
-
-Any user can send tips/gifts to a game participant.
-
-- `TipEvent`: Client sends a request to send a tip/gift to a game participant.
-- `TipReceivedEvent`: Server sends a response to the client with the tip/gift.
-
 ## Other
-### Errors
+### 10. Errors
 
 There can be errors in the game moves, or in the update to db state or in the backend logic:
 
-- `ErrorEvent`: The server sends a response to the client with the error message.
+- `error`: The server sends a response to the client with the error message.
 - The client now can undo the move on the client side.
 
-### Impersonation / Cheating
+### 11. Banned
 
-If a client tries to impersonate another user, the server will send a `CheatingEvent` to the client with the cheating message.
+If a client tries to impersonate another user, the server will send a `Banned` event to the client with the cheating message.
 
-- `CheatingEvent`: The server sends a response to the client with the cheating message.
+- `banned`: The server sends a response to the client with the cheating message.
 - The client now can undo the move on the client side.

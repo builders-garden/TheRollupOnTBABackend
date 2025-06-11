@@ -5,38 +5,44 @@ import type {
   GameParticipantStatus,
 } from "@prisma/client";
 import type { Color, Square } from "chess.js";
-import { SocketEvents } from "../enums";
+import { ServerToClientSocketEvents } from "../enums";
 import type { Participant } from "..";
 
-export type CreateGameResponse = {
+// 1. Game Creation
+export type CreateGameResponseEvent = {
   gameId: string;
   status: GameState;
   participants: Participant[];
 };
 
-export type JoinGameResponse = {
+// 2. Game Joining
+export type JoinGameResponseEvent = {
   gameId: string;
   status: GameState;
   participants: Participant[];
 };
 
-export type PaymentConfirmedEvent = {
+// 2.b Payment Confirmed
+export type PaymentConfirmedAckEvent = {
   gameId: string;
   userId: string;
 };
 
-export type ParticipantReadyEvent = {
+// 3. Game Starting
+export type ParticipantReadyAckEvent = {
   gameId: string;
   userId: string;
   status: GameParticipantStatus;
 };
 
+// 4 Start Game
 export type StartGameEvent = {
   gameId: string;
   gameState: GameState;
 };
 
-export type MovePieceEvent = {
+// 5. Game Playing
+export type MovePieceAckEvent = {
   gameId: string;
   userId: string;
   move: {
@@ -47,63 +53,109 @@ export type MovePieceEvent = {
   };
 };
 
+// 6. Game Ending: user asked to draw, inform other participant
 export type AcceptGameEndEvent = {
   gameId: string;
   userId: string;
   reason: GameEndReason;
 };
 
+// 6.b Game Ending: user didnt accept the draw request
+export type ResumeGameEvent = {
+  gameId: string;
+  userId: string;
+  status: GameState;
+  message: string;
+};
+
+// 6. Game Ending: Game ended
 export type GameEndedEvent = {
   gameId: string;
   userId: string;
   reason: GameEndReason;
 };
 
+// 7. Game paused: Participant left
 export type ParticipantLeftEvent = {
   gameId: string;
   userId: string;
   status: GameParticipantStatus;
 };
 
+// 7.b Game paused: Participant joined
 export type ParticipantJoinedEvent = {
   gameId: string;
   userId: string;
 };
 
+// 8. Extras: Messages
+export type MessageSentAckEvent = {
+  gameId: string;
+  userId: string;
+  message: {
+    id: string;
+    contentType: GameChatContentType;
+    createdAt: Date;
+    content?: string;
+    tip?: {
+      tipId: string;
+      tipChainId: number;
+      tipTxHash: string;
+      tipAmount: number;
+    };
+    user: {
+      id: string;
+      fid: number;
+      username: string;
+      displayName: string;
+      avatarUrl: string | null;
+    };
+    gameTip?: {
+      id: string;
+      name: string;
+      description: string;
+      slug: string;
+      imageUrl: string;
+      category: string;
+      price: number;
+    };
+  };
+};
+
+// 9. Extras: Spectators
+export type SpectatorJoinAckEvent = {
+  gameId: string;
+  userId: string;
+};
+
+// 10. Other: Errors
 export type ErrorEvent = {
   code: number;
   userId?: string;
   message: string;
 };
 
-export type MessageReceivedEvent = {
+// 11. Other: Banned
+export type BannedEvent = {
   gameId: string;
   userId: string;
-  message: {
-    id: string;
-    content: string;
-    contentType: GameChatContentType;
-    createdAt: Date;
-    user: {
-      fid: number;
-      username: string;
-      displayName: string;
-      avatarUrl: string | null;
-    };
-  };
+  message: string;
 };
 
 export type ServerToClientEvents = {
-  [SocketEvents.CREATE_GAME_RESPONSE]: CreateGameResponse;
-  [SocketEvents.JOIN_GAME_RESPONSE]: JoinGameResponse;
-  [SocketEvents.PAYMENT_CONFIRMED]: PaymentConfirmedEvent;
-  [SocketEvents.PARTICIPANT_READY]: ParticipantReadyEvent;
-  [SocketEvents.START_GAME]: StartGameEvent;
-  [SocketEvents.MOVE_PIECE]: MovePieceEvent;
-  [SocketEvents.MESSAGE_RECEIVED]: MessageReceivedEvent;
-  [SocketEvents.ACCEPT_GAME_END]: AcceptGameEndEvent;
-  [SocketEvents.GAME_ENDED]: GameEndedEvent;
-  [SocketEvents.PARTICIPANT_LEFT]: ParticipantLeftEvent;
-  [SocketEvents.PARTICIPANT_JOINED]: ParticipantJoinedEvent;
-  [SocketEvents.ERROR]: ErrorEvent;
+  [ServerToClientSocketEvents.CREATE_GAME_RESPONSE]: CreateGameResponseEvent;
+  [ServerToClientSocketEvents.JOIN_GAME_RESPONSE]: JoinGameResponseEvent;
+  [ServerToClientSocketEvents.PAYMENT_CONFIRMED_ACK]: PaymentConfirmedAckEvent;
+  [ServerToClientSocketEvents.PARTICIPANT_READY_ACK]: ParticipantReadyAckEvent;
+  [ServerToClientSocketEvents.START_GAME]: StartGameEvent;
+  [ServerToClientSocketEvents.MOVE_PIECE_ACK]: MovePieceAckEvent;
+  [ServerToClientSocketEvents.ACCEPT_GAME_END]: AcceptGameEndEvent;
+  [ServerToClientSocketEvents.GAME_ENDED]: GameEndedEvent;
+  [ServerToClientSocketEvents.RESUME_GAME]: ResumeGameEvent;
+  [ServerToClientSocketEvents.PARTICIPANT_LEFT]: ParticipantLeftEvent;
+  [ServerToClientSocketEvents.PARTICIPANT_JOINED]: ParticipantJoinedEvent;
+  [ServerToClientSocketEvents.MESSAGE_SENT_ACK]: MessageSentAckEvent;
+  [ServerToClientSocketEvents.SPECTATOR_JOIN_ACK]: SpectatorJoinAckEvent;
+  [ServerToClientSocketEvents.ERROR]: ErrorEvent;
+  [ServerToClientSocketEvents.BANNED]: BannedEvent;
 };

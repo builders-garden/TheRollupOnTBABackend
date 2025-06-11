@@ -1,9 +1,9 @@
 import { gameRoomManager } from "./game-room-manager";
 import { SocketHandler } from "./socket-handler";
-import type { PaymentConfirmedEvent } from "../types";
+import type { PaymentConfirmedAckEvent } from "../types";
 
 export class PaymentConfirmedHandler extends SocketHandler {
-  async handle({ gameId, userId }: PaymentConfirmedEvent) {
+  async handle({ gameId, userId }: PaymentConfirmedAckEvent) {
     console.log(
       `[LOBBY] Participant ${userId} confirmed stake in game ${gameId}`
     );
