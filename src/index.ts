@@ -19,6 +19,7 @@ import {
   DisconnectParticipantHandler,
   EndGameHandler,
   GameChatMessagesHandler,
+  JoinGameHandler,
   MovePieceHandler,
   ParticipantReadyHandler,
   PaymentConfirmedHandler,
@@ -94,7 +95,8 @@ io.on("connection", (socket) => {
     ClientToServerSocketEvents.JOIN_GAME_REQUEST,
     async (data: JoinGameRequestEvent) => {
       console.log("joining chess game:", data);
-      socket.broadcast.emit("join-game-response", data);
+      const handler = new JoinGameHandler(socket, io);
+      await handler.handle(data);
     }
   );
 

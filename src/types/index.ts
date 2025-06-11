@@ -1,5 +1,4 @@
 import type { Address, Hex } from "viem";
-import type { PaymentStatus } from "./enums";
 
 export * from "./socket";
 
@@ -26,7 +25,6 @@ export type Payment = {
   currencyAddress: Address;
   walletAddress: Address;
   txHash: Hex;
-  status: PaymentStatus;
 };
 
 export type GameOptionDetails = {

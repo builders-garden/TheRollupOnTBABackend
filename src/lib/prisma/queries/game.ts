@@ -20,6 +20,13 @@ import { getGameOptionTime } from "../../utils";
 export function getGameById(gameId: string) {
   return prisma.game.findUnique({
     where: { id: gameId },
+    include: {
+      participants: {
+        include: {
+          user: true,
+        },
+      },
+    },
   });
 }
 
