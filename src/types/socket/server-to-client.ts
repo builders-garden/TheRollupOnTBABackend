@@ -53,6 +53,19 @@ export type MovePieceAckEvent = {
   };
 };
 
+// 5.b Game Playing: Move piece error
+export type MovePieceErrorEvent = {
+  gameId: string;
+  userId: string;
+  error: string;
+  move: {
+    color: Color;
+    from: Square;
+    to: Square;
+    promotion?: string;
+  };
+};
+
 // 6. Game Ending: user asked to draw, inform other participant
 export type AcceptGameEndEvent = {
   gameId: string;
@@ -149,6 +162,7 @@ export type ServerToClientEvents = {
   [ServerToClientSocketEvents.PARTICIPANT_READY_ACK]: ParticipantReadyAckEvent;
   [ServerToClientSocketEvents.START_GAME]: StartGameEvent;
   [ServerToClientSocketEvents.MOVE_PIECE_ACK]: MovePieceAckEvent;
+  [ServerToClientSocketEvents.MOVE_PIECE_ERROR]: MovePieceErrorEvent;
   [ServerToClientSocketEvents.ACCEPT_GAME_END]: AcceptGameEndEvent;
   [ServerToClientSocketEvents.GAME_ENDED]: GameEndedEvent;
   [ServerToClientSocketEvents.RESUME_GAME]: ResumeGameEvent;

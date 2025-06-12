@@ -21,6 +21,7 @@ export enum ServerToClientSocketEvents {
   PARTICIPANT_LEFT = "participant_left", // 5. participant left
   PARTICIPANT_JOINED = "participant_joined", // 6. participant joined
   MOVE_PIECE_ACK = "move_piece_ack", // 7. move piece acknowledged
+  MOVE_PIECE_ERROR = "move_piece_error", // 7.b move piece error
   ACCEPT_GAME_END = "accept_game_end", // 8. accept game end (ask other player to accept draw)
   GAME_ENDED = "game_ended", // 9. game ended (either via resign or draw request accepted)
   RESUME_GAME = "resume_game", // 10. resume game (after draw request rejected)

@@ -1,8 +1,9 @@
 import { SocketHandler } from "./socket-handler";
 import type { MovePieceEvent } from "../types";
 import { getGameParticipant } from "../lib/prisma/queries/game-participants";
-import { getGameById, updateGame } from "../lib/prisma/queries/game";
+import { getGameById, updateGameWithMove } from "../lib/prisma/queries/game";
 import { ServerToClientSocketEvents } from "../types/enums";
+import { Chess } from "chess.js";
 
 export class MovePieceHandler extends SocketHandler {
   async handle({ gameId, userId, move }: MovePieceEvent) {
@@ -23,18 +24,33 @@ export class MovePieceHandler extends SocketHandler {
     }
 
     // TODO check if move is valid
-    const validMove = true;
-    if (!validMove) {
+    const chess = new Chess(game.currentFen);
+    let checkMove = null;
+    try {
+      checkMove = chess.move(move);
+    } catch (error) {
       console.error(
         `[GAME] Invalid move from ${move.from} to ${move.to} in game ${gameId}`
       );
+    }
+    if (!checkMove) {
+      const errorMessage = `Invalid move from ${move.from} to ${move.to}`;
+      console.error(`[GAME] ${errorMessage} in game ${gameId}`);
+      this.emitToGame(gameId, ServerToClientSocketEvents.MOVE_PIECE_ERROR, {
+        gameId,
+        userId,
+        error: errorMessage,
+        move,
+      });
       return;
     }
 
-    // TODO update game board
-    const updatedGame = await updateGame(gameId, {
-      currentFen: move.fen,
-    });
+    const updatedGame = await updateGameWithMove(
+      gameId,
+      userId,
+      chess.fen(),
+      checkMove
+    );
     console.log(`[GAME] Updated game: ${updatedGame}`);
 
     // TODO emit move to all participants

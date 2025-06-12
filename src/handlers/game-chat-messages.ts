@@ -42,11 +42,11 @@ export class GameChatMessagesHandler extends SocketHandler {
       userId,
       message: {
         id: newMessage.id,
-        content: newMessage.content,
+        content: newMessage.content || "",
         contentType: newMessage.contentType,
         createdAt: newMessage.createdAt,
         user: newMessage.user,
-        gameTip: newMessage.gameTip,
+        gameTip: newMessage.gameTip || undefined,
       },
     });
   }

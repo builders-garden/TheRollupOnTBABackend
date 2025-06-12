@@ -31,6 +31,7 @@ export class ParticipantReadyHandler extends SocketHandler {
         // 4 start the game
         this.emitToGame(gameId, ServerToClientSocketEvents.START_GAME, {
           gameId,
+          gameState: GameState.ACTIVE,
         });
       } else {
         // 3 update game state to waiting

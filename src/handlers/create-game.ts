@@ -2,6 +2,7 @@ import { createGame } from "../lib/prisma/queries/game";
 import { SocketHandler } from "./socket-handler";
 import type { CreateGameRequestEvent } from "../types";
 import { ServerToClientSocketEvents } from "../types/enums";
+import { GameParticipantStatus } from "@prisma/client";
 
 export class CreateGameHandler extends SocketHandler {
   async handle({
@@ -28,7 +29,15 @@ export class CreateGameHandler extends SocketHandler {
         {
           gameId: newGame.id,
           status: newGame.gameState,
-          participants: newGame.participants,
+          participants: newGame.participants.map((p) => ({
+            socketId: this.socket.id,
+            participantFid: p.user.fid,
+            participantUsername: p.user.username,
+            avatarUrl: p.user.avatarUrl || "",
+            ready: p.status === GameParticipantStatus.READY,
+            score: 0, // TODO: get score from db
+            isCreator: p.isCreator,
+          })),
         }
       );
     } catch (e) {

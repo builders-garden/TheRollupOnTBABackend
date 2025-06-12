@@ -7,6 +7,7 @@ import {
 } from "@prisma/client";
 import { getUserByFid, getOrCreateUserByFid } from "./user";
 import { getGameOptionTime } from "../../utils";
+import type { Move } from "chess.js";
 
 /**
  * Get a game by its id.
@@ -44,6 +45,43 @@ export function updateGame(gameId: string, game: Prisma.GameUpdateInput) {
   return prisma.game.update({
     where: { id: gameId },
     data: game,
+  });
+}
+
+/**
+ * Update a game creating a move.
+ *
+ * This function updates a game creating a move.
+ * It takes a game id and a move to apply to the game.
+ *
+ * @param gameId - The id of the game to update
+ * @param userId - The id of the user who made the move
+ * @param newFen - The new FEN of the game
+ * @param move - The move to apply to the game
+ * @returns The updated game
+ */
+export function updateGameWithMove(
+  gameId: string,
+  userId: string,
+  newFen: string,
+  move: Move
+) {
+  return prisma.game.update({
+    where: { id: gameId },
+    data: {
+      currentFen: newFen,
+      moves: {
+        create: [
+          {
+            userId,
+            move: JSON.stringify(move),
+            fen: newFen,
+            san: move.san,
+            lan: move.lan,
+          },
+        ],
+      },
+    },
   });
 }
 

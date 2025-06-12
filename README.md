@@ -153,6 +153,7 @@ Once an opponent joins the game, it sends a `JoinGameRequest` to the server.
 ## 5. Game Playing
 
 - `move_piece`: Client sends a request to move a piece.
+- `move_piece_error`: Server sends a response to the client with the error message and a request to undo the move on the client side.
 - `move_piece_ack`: Server sends a response to the client with the move.
 - The server now can update the game board and check if the move is valid.
 - if the move is valid, the server sends a `move_piece_ack` to the client with the move.

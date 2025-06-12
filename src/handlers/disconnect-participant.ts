@@ -1,5 +1,8 @@
+import { GameParticipantStatus, GameState } from "@prisma/client";
+import { ServerToClientSocketEvents } from "../types/enums";
 import { gameRoomManager } from "./game-room-manager";
 import { SocketHandler } from "./socket-handler";
+import { updateGame } from "../lib/prisma/queries/game";
 
 export class DisconnectParticipantHandler extends SocketHandler {
   async handle(): Promise<void> {
@@ -29,12 +32,21 @@ export class DisconnectParticipantHandler extends SocketHandler {
             await gameRoomManager.removeParticipant(gameId, participantId);
 
             // Notify other participants
-            this.emitToGame(gameId, "participant_left", {
-              participantId: socketId,
+            this.emitToGame(
+              gameId,
+              ServerToClientSocketEvents.PARTICIPANT_LEFT,
+              {
+                gameId,
+                userId: participantId,
+                status: GameParticipantStatus.LEFT,
+              }
+            );
+
+            // TODO: update game state
+            await updateGame(gameId, {
+              gameState: GameState.PAUSED,
             });
-            this.emitToGame(gameId, "game_update", {
-              participants: Array.from(room.participants.values()),
-            });
+
             break; // Break since a participant can only be in one room
           }
         }
