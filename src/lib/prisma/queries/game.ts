@@ -81,6 +81,9 @@ export function updateGameWithMove(
           },
         ],
       },
+      totalMoves: {
+        increment: 1,
+      },
     },
   });
 }

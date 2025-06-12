@@ -28,11 +28,7 @@ export class MovePieceHandler extends SocketHandler {
     let checkMove = null;
     try {
       checkMove = chess.move(move);
-    } catch (error) {
-      console.error(
-        `[GAME] Invalid move from ${move.from} to ${move.to} in game ${gameId}`
-      );
-    }
+    } catch (error) {}
     if (!checkMove) {
       const errorMessage = `Invalid move from ${move.from} to ${move.to}`;
       console.error(`[GAME] ${errorMessage} in game ${gameId}`);
