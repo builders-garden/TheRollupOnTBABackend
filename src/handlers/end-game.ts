@@ -13,6 +13,7 @@ import {
   updateGame,
   updateGameParticipant,
 } from "../lib/prisma/queries";
+import { ChessTimerManager } from "../lib/timer-manager";
 
 export class EndGameHandler extends SocketHandler {
   async handle({ gameId, userId, reason }: EndGameRequestEvent): Promise<void> {
@@ -47,6 +48,11 @@ export class EndGameHandler extends SocketHandler {
       reason === GameEndReason.WHITE_RESIGNED ||
       reason === GameEndReason.BLACK_RESIGNED
     ) {
+      // Stop and cleanup timer
+      const chessTimerManager = ChessTimerManager.getInstance();
+      chessTimerManager.stopTimer(gameId);
+      chessTimerManager.deleteTimer(gameId);
+
       // update game state
       await updateGame(gameId, {
         gameState: GameState.ENDED,

@@ -4,6 +4,8 @@ import { getGameParticipant } from "../lib/prisma/queries/game-participants";
 import { getGameById, updateGameWithMove } from "../lib/prisma/queries/game";
 import { ServerToClientSocketEvents } from "../types/enums";
 import { Chess } from "chess.js";
+import { ChessTimerManager } from "../lib/timer-manager";
+import { updateTimerAfterMove } from "../lib/timer-persistence";
 
 export class MovePieceHandler extends SocketHandler {
   async handle({ gameId, userId, move }: MovePieceEvent) {
@@ -49,7 +51,18 @@ export class MovePieceHandler extends SocketHandler {
     );
     console.log(`[GAME] Updated game: ${updatedGame}`);
 
-    // TODO emit move to all participants
+    // Switch timer to opponent
+    const chessTimerManager = ChessTimerManager.getInstance();
+    const timer = chessTimerManager.getTimer(gameId);
+
+    if (timer) {
+      chessTimerManager.switchTurn(gameId, move.color);
+
+      // Update database with new timer values
+      await updateTimerAfterMove(gameId, timer);
+    }
+
+    // emit move to all participants
     this.emitToGame(gameId, ServerToClientSocketEvents.MOVE_PIECE_ACK, {
       gameId,
       userId,

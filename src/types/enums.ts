@@ -29,8 +29,11 @@ export enum ServerToClientSocketEvents {
   // extra
   MESSAGE_SENT_ACK = "message_sent_ack", // 11. message sent acknowledged
   SPECTATOR_JOIN_ACK = "spectator_join_ack", // 12. spectator join acknowledged
+  // timer events
+  TIMER_UPDATE = "timer_update", // 13. timer update (1-second intervals)
+  TIMER_EXPIRED = "timer_expired", // 14. timer expired (timeout)
   // other
-  ERROR = "error", // 13. error
-  BANNED = "banned", // 14. user found cheating ==> banned
-  RESET_GAME = "reset_game", // 15. reset game (dev only)
+  ERROR = "error", // 15. error
+  BANNED = "banned", // 16. user found cheating ==> banned
+  RESET_GAME = "reset_game", // 17. reset game (dev only)
 }

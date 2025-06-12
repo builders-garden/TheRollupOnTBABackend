@@ -13,6 +13,12 @@ import responseMiddleware from "./middleware/response";
 import { handleError, handleNotFound } from "./middleware/error.middleware";
 
 import { setIOInstance } from "./lib/socket";
+import { ChessTimerManager } from "./lib/timer-manager";
+import {
+  getUserIdByColor,
+  endGameByTimeout,
+  recoverActiveTimers,
+} from "./lib/timer-persistence";
 import {
   AcceptGameEndResponseHandler,
   DisconnectParticipantHandler,
@@ -73,6 +79,49 @@ const io = new SocketIOServer(httpServer, {
 
 // Set the Socket.IO instance
 setIOInstance(io);
+
+// Initialize timer manager
+const chessTimerManager = ChessTimerManager.getInstance();
+
+// Set up timer callbacks
+chessTimerManager.setOnTimerUpdate((gameId, timer) => {
+  io.to(gameId).emit("timer_update", {
+    gameId,
+    whiteTimeLeft: timer.whiteTimeLeft,
+    blackTimeLeft: timer.blackTimeLeft,
+    activeColor: timer.activeColor,
+    lastMoveAt: timer.lastMoveAt || Date.now(),
+  });
+});
+
+chessTimerManager.setOnTimerExpired(async (gameId, color) => {
+  // Get user ID from game data
+  const userId = await getUserIdByColor(gameId, color);
+
+  if (userId) {
+    io.to(gameId).emit("timer_expired", {
+      gameId,
+      userId,
+      color,
+    });
+
+    // End game due to timeout
+    await endGameByTimeout(gameId, color);
+
+    // Notify game ended
+    io.to(gameId).emit("game_ended", {
+      gameId,
+      userId,
+      reason: color === "w" ? "WHITE_TIMEOUT" : "BLACK_TIMEOUT",
+    });
+  }
+
+  // Cleanup timer
+  chessTimerManager.deleteTimer(gameId);
+});
+
+// Recover active timers from database on startup
+recoverActiveTimers();
 
 // Socket.IO connection logic
 io.on("connection", (socket) => {
@@ -172,4 +221,19 @@ app.use(handleError);
 const port = env.PORT;
 httpServer.listen(port, () => {
   console.log(`🚀 Server with WS enabled is running on port ${port}`);
+});
+
+// Cleanup on server shutdown
+process.on("SIGINT", () => {
+  console.log("Shutting down server...");
+  chessTimerManager.cleanup();
+  httpServer.close();
+  process.exit(0);
+});
+
+process.on("SIGTERM", () => {
+  console.log("Shutting down server...");
+  chessTimerManager.cleanup();
+  httpServer.close();
+  process.exit(0);
 });

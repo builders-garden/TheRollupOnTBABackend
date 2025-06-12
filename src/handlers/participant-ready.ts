@@ -4,6 +4,9 @@ import type { ParticipantReadyEvent } from "../types";
 import { ServerToClientSocketEvents } from "../types/enums";
 import { GameParticipantStatus, GameState } from "@prisma/client";
 import { updateGame } from "../lib/prisma/queries/game";
+import { ChessTimerManager } from "../lib/timer-manager";
+import { initializeGameTimers } from "../lib/timer-persistence";
+import { getGameOptionTime } from "../lib/utils";
 
 export class ParticipantReadyHandler extends SocketHandler {
   async handle({ gameId, userId }: ParticipantReadyEvent) {
@@ -28,6 +31,32 @@ export class ParticipantReadyHandler extends SocketHandler {
       if (areAllParticipantsReady) {
         // 3 update game state to active
         await updateGame(gameId, { gameState: GameState.ACTIVE });
+
+        // 3.1 Initialize and start timer
+        const chessTimerManager = ChessTimerManager.getInstance();
+        const game = updatedGameParticipant.game;
+
+        // Get time control settings
+        const { duration } = getGameOptionTime(game.gameMode, game.gameOption);
+
+        // Initialize timer values in database
+        await initializeGameTimers(gameId, duration);
+
+        // Create and start timer
+        const timer = chessTimerManager.createTimer(
+          gameId,
+          game.gameMode,
+          game.gameOption,
+          duration,
+          duration,
+          "w" // white moves first
+        );
+
+        if (timer) {
+          chessTimerManager.startTimer(gameId, "w");
+          console.log(`[TIMER] Started timer for game ${gameId}`);
+        }
+
         // 4 start the game
         this.emitToGame(gameId, ServerToClientSocketEvents.START_GAME, {
           gameId,
