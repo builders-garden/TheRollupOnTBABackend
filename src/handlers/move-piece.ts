@@ -76,6 +76,11 @@ export class MovePieceHandler extends SocketHandler {
           turn === "w"
             ? GameEndReason.WHITE_INSUFFICIENT_MATERIAL
             : GameEndReason.BLACK_INSUFFICIENT_MATERIAL;
+      } else if (chess.isDrawByFiftyMoves()) {
+        gameEndReason =
+          turn === "w"
+            ? GameEndReason.WHITE_FIFTY_MOVE_RULE
+            : GameEndReason.BLACK_FIFTY_MOVE_RULE;
       } else {
         gameEndReason = GameEndReason.OTHER;
       }
