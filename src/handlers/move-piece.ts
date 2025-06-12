@@ -23,7 +23,7 @@ export class MovePieceHandler extends SocketHandler {
       return;
     }
 
-    // TODO check if move is valid
+    // check if move is valid
     const chess = new Chess(game.currentFen);
     let checkMove = null;
     try {

@@ -1,23 +1,9 @@
-import type {
-  GameMode,
-  GameOption,
-  GameEndReason,
-  GameChatContentType,
-} from "@prisma/client";
+import type { GameEndReason, GameChatContentType } from "@prisma/client";
 import type { Color, Square } from "chess.js";
 import { ClientToServerSocketEvents } from "../enums";
-import type { Participant, Payment } from "..";
+import type { Payment } from "..";
 
-// 1. Game Creation
-export type CreateGameRequestEvent = {
-  game: {
-    mode: GameMode;
-    option: GameOption;
-    contractId?: string;
-  };
-  participants: Participant[];
-  payment: Payment;
-};
+// 1. Game Creation (handled in next.js backend)
 
 // 2. Game Joining
 export type JoinGameRequestEvent = {
@@ -88,8 +74,13 @@ export type SpectatorJoinEvent = {
   userId: string;
 };
 
+// dev only, reset chess board
+export type ResetGameRequestEvent = {
+  gameId: string;
+  userId: string;
+};
+
 export type ClientToServerEvents = {
-  [ClientToServerSocketEvents.CREATE_GAME_REQUEST]: CreateGameRequestEvent;
   [ClientToServerSocketEvents.JOIN_GAME_REQUEST]: JoinGameRequestEvent;
   [ClientToServerSocketEvents.PAYMENT_CONFIRMED]: PaymentConfirmedEvent;
   [ClientToServerSocketEvents.PARTICIPANT_READY]: ParticipantReadyEvent;
@@ -97,4 +88,5 @@ export type ClientToServerEvents = {
   [ClientToServerSocketEvents.MESSAGE_SENT]: MessageSentEvent;
   [ClientToServerSocketEvents.SPECTATOR_JOIN]: SpectatorJoinEvent;
   [ClientToServerSocketEvents.END_GAME_REQUEST]: EndGameRequestEvent;
+  [ClientToServerSocketEvents.RESET_GAME_REQUEST]: ResetGameRequestEvent;
 };

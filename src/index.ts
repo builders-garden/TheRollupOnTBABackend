@@ -15,7 +15,6 @@ import { handleError, handleNotFound } from "./middleware/error.middleware";
 import { setIOInstance } from "./lib/socket";
 import {
   AcceptGameEndResponseHandler,
-  CreateGameHandler,
   DisconnectParticipantHandler,
   EndGameHandler,
   GameChatMessagesHandler,
@@ -25,7 +24,6 @@ import {
   PaymentConfirmedHandler,
 } from "./handlers";
 import type {
-  CreateGameRequestEvent,
   EndGameRequestEvent,
   JoinGameRequestEvent,
   MovePieceEvent,
@@ -80,15 +78,7 @@ setIOInstance(io);
 io.on("connection", (socket) => {
   console.log("0. client connected:", socket.id);
 
-  // 1. Game creation request
-  socket.on(
-    ClientToServerSocketEvents.CREATE_GAME_REQUEST,
-    async (data: CreateGameRequestEvent) => {
-      console.log("create game request:", data);
-      const handler = new CreateGameHandler(socket, io);
-      await handler.handle(data);
-    }
-  );
+  // 1. Game creation request (done on nextjs backend)
 
   // 2. Game joining request
   socket.on(

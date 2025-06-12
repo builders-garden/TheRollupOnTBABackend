@@ -8,12 +8,7 @@ import type { Color, Square } from "chess.js";
 import { ServerToClientSocketEvents } from "../enums";
 import type { Participant } from "..";
 
-// 1. Game Creation
-export type CreateGameResponseEvent = {
-  gameId: string;
-  status: GameState;
-  participants: Participant[];
-};
+// 1. Game Creation (done on nextjs backend)
 
 // 2. Game Joining
 export type JoinGameResponseEvent = {
@@ -155,8 +150,13 @@ export type BannedEvent = {
   message: string;
 };
 
+// 12. Other: Reset game (dev only)
+export type ResetGameEvent = {
+  gameId: string;
+  userId: string;
+};
+
 export type ServerToClientEvents = {
-  [ServerToClientSocketEvents.CREATE_GAME_RESPONSE]: CreateGameResponseEvent;
   [ServerToClientSocketEvents.JOIN_GAME_RESPONSE]: JoinGameResponseEvent;
   [ServerToClientSocketEvents.PAYMENT_CONFIRMED_ACK]: PaymentConfirmedAckEvent;
   [ServerToClientSocketEvents.PARTICIPANT_READY_ACK]: ParticipantReadyAckEvent;
@@ -172,4 +172,5 @@ export type ServerToClientEvents = {
   [ServerToClientSocketEvents.SPECTATOR_JOIN_ACK]: SpectatorJoinAckEvent;
   [ServerToClientSocketEvents.ERROR]: ErrorEvent;
   [ServerToClientSocketEvents.BANNED]: BannedEvent;
+  [ServerToClientSocketEvents.RESET_GAME]: ResetGameEvent;
 };

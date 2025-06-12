@@ -1,6 +1,6 @@
 // client to server
 export enum ClientToServerSocketEvents {
-  CREATE_GAME_REQUEST = "create_game_request", // 1. create game
+  // 1. create game (done on nextjs backend)
   JOIN_GAME_REQUEST = "join_game_request", // 2. join game
   PAYMENT_CONFIRMED = "payment_confirmed", // 3. payment confirmed
   PARTICIPANT_READY = "participant_ready", // 5. participant ready
@@ -9,11 +9,12 @@ export enum ClientToServerSocketEvents {
   ACCEPT_GAME_END_RESPONSE = "accept_game_end_response", // 8. accept game end response
   MESSAGE_SENT = "message_sent", // 9. message sent (text, image or tip)
   SPECTATOR_JOIN = "spectator_join", // 10. spectator join
+  RESET_GAME_REQUEST = "reset_game_request", // 11. reset game request (dev only)
 }
 
 // server to client
 export enum ServerToClientSocketEvents {
-  CREATE_GAME_RESPONSE = "create_game_response", // 1. create game
+  // 1. create game (done on nextjs backend)
   JOIN_GAME_RESPONSE = "join_game_response", // 2. join game
   PAYMENT_CONFIRMED_ACK = "payment_confirmed_ack", // 2.b payment confirmed acknowledged
   PARTICIPANT_READY_ACK = "participant_ready_ack", // 3. participant ready acknowledged
@@ -31,4 +32,5 @@ export enum ServerToClientSocketEvents {
   // other
   ERROR = "error", // 13. error
   BANNED = "banned", // 14. user found cheating ==> banned
+  RESET_GAME = "reset_game", // 15. reset game (dev only)
 }
