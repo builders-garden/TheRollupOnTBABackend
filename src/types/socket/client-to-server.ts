@@ -88,5 +88,6 @@ export type ClientToServerEvents = {
   [ClientToServerSocketEvents.MESSAGE_SENT]: MessageSentEvent;
   [ClientToServerSocketEvents.SPECTATOR_JOIN]: SpectatorJoinEvent;
   [ClientToServerSocketEvents.END_GAME_REQUEST]: EndGameRequestEvent;
+  [ClientToServerSocketEvents.ACCEPT_GAME_END_RESPONSE]: AcceptGameEndResponseEvent;
   [ClientToServerSocketEvents.RESET_GAME_REQUEST]: ResetGameRequestEvent;
 };
