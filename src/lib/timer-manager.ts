@@ -57,6 +57,15 @@ export class ChessTimerManager {
     activeColor: "w" | "b" | null = null
   ): GameTimer | null {
     try {
+      // Check if timer already exists for this game
+      const existingTimer = this.timers.get(gameId);
+      if (existingTimer) {
+        console.log(
+          `[TIMER] Timer already exists for game ${gameId}, returning existing timer`
+        );
+        return existingTimer;
+      }
+
       // Get time control settings
       const { duration, increase } = getGameOptionTime(gameMode, gameOption);
 
@@ -89,9 +98,19 @@ export class ChessTimerManager {
       return false;
     }
 
+    // Check if timer is already running for this color
+    if (timer.intervalId && timer.activeColor === color) {
+      console.log(
+        `[TIMER] Timer already running for ${color} in game ${gameId}`
+      );
+      return true;
+    }
+
     // Stop existing interval if running
     if (timer.intervalId) {
+      console.log(`[TIMER] Stopping existing interval for game ${gameId}`);
       clearInterval(timer.intervalId);
+      timer.intervalId = null;
     }
 
     timer.activeColor = color;
@@ -165,6 +184,28 @@ export class ChessTimerManager {
    */
   public getTimer(gameId: string): GameTimer | null {
     return this.timers.get(gameId) || null;
+  }
+
+  /**
+   * Check if timer is running for a game
+   */
+  public isTimerRunning(gameId: string): boolean {
+    const timer = this.timers.get(gameId);
+    return timer ? timer.intervalId !== null : false;
+  }
+
+  /**
+   * Get debug information about all timers
+   */
+  public getDebugInfo(): string {
+    const info = Array.from(this.timers.entries()).map(([gameId, timer]) => {
+      return `Game ${gameId}: ${timer.activeColor || "paused"} (W:${
+        timer.whiteTimeLeft
+      }s B:${timer.blackTimeLeft}s) - ${
+        timer.intervalId ? "RUNNING" : "STOPPED"
+      }`;
+    });
+    return `Active timers: ${this.timers.size}\n${info.join("\n")}`;
   }
 
   /**

@@ -32,29 +32,40 @@ export class ParticipantReadyHandler extends SocketHandler {
         // 3 update game state to active
         await updateGame(gameId, { gameState: GameState.ACTIVE });
 
-        // 3.1 Initialize and start timer
+        // 3.1 Initialize and start timer (only if not already exists)
         const chessTimerManager = ChessTimerManager.getInstance();
         const game = updatedGameParticipant.game;
 
-        // Get time control settings
-        const { duration } = getGameOptionTime(game.gameMode, game.gameOption);
+        // Check if timer already exists for this game
+        const existingTimer = chessTimerManager.getTimer(gameId);
+        if (!existingTimer) {
+          // Get time control settings
+          const { duration } = getGameOptionTime(
+            game.gameMode,
+            game.gameOption
+          );
 
-        // Initialize timer values in database
-        await initializeGameTimers(gameId, duration);
+          // Initialize timer values in database
+          await initializeGameTimers(gameId, duration);
 
-        // Create and start timer
-        const timer = chessTimerManager.createTimer(
-          gameId,
-          game.gameMode,
-          game.gameOption,
-          duration,
-          duration,
-          "w" // white moves first
-        );
+          // Create and start timer
+          const timer = chessTimerManager.createTimer(
+            gameId,
+            game.gameMode,
+            game.gameOption,
+            duration,
+            duration,
+            "w" // white moves first
+          );
 
-        if (timer) {
-          chessTimerManager.startTimer(gameId, "w");
-          console.log(`[TIMER] Started timer for game ${gameId}`);
+          if (timer) {
+            chessTimerManager.startTimer(gameId, "w");
+            console.log(`[TIMER] Started timer for game ${gameId}`);
+          }
+        } else {
+          console.log(
+            `[TIMER] Timer already exists for game ${gameId}, not creating duplicate`
+          );
         }
 
         // 4 start the game
