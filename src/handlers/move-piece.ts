@@ -6,6 +6,7 @@ import { ServerToClientSocketEvents } from "../types/enums";
 import { Chess } from "chess.js";
 import { ChessTimerManager } from "../lib/timer-manager";
 import { updateTimerAfterMove } from "../lib/timer-persistence";
+import { GameEndReason } from "@prisma/client";
 
 export class MovePieceHandler extends SocketHandler {
   async handle({ gameId, userId, move }: MovePieceEvent) {
@@ -50,6 +51,42 @@ export class MovePieceHandler extends SocketHandler {
       checkMove
     );
     console.log(`[GAME] Updated game: ${updatedGame}`);
+
+    // check if game has ended
+    let gameEndReason: GameEndReason | null = null;
+    const turn = chess.turn();
+    if (chess.isGameOver()) {
+      if (chess.isCheckmate()) {
+        gameEndReason =
+          turn === "w"
+            ? GameEndReason.BLACK_CHECKMATE
+            : GameEndReason.WHITE_CHECKMATE;
+      } else if (chess.isStalemate()) {
+        gameEndReason =
+          turn === "w"
+            ? GameEndReason.WHITE_STALEMATE
+            : GameEndReason.BLACK_STALEMATE;
+      } else if (chess.isThreefoldRepetition()) {
+        gameEndReason =
+          turn === "w"
+            ? GameEndReason.WHITE_THREEFOLD_REPETITION
+            : GameEndReason.BLACK_THREEFOLD_REPETITION;
+      } else if (chess.isInsufficientMaterial()) {
+        gameEndReason =
+          turn === "w"
+            ? GameEndReason.WHITE_INSUFFICIENT_MATERIAL
+            : GameEndReason.BLACK_INSUFFICIENT_MATERIAL;
+      } else {
+        gameEndReason = GameEndReason.OTHER;
+      }
+
+      this.emitToGame(gameId, ServerToClientSocketEvents.GAME_ENDED, {
+        gameId,
+        userId,
+        reason: gameEndReason,
+      });
+      return;
+    }
 
     // Switch timer to opponent
     const chessTimerManager = ChessTimerManager.getInstance();
