@@ -39,7 +39,10 @@ import type {
   PaymentConfirmedEvent,
 } from "./types";
 import { baseOrigins, localOrigins } from "./lib/cors";
-import { ClientToServerSocketEvents } from "./types/enums";
+import {
+  ClientToServerSocketEvents,
+  ServerToClientSocketEvents,
+} from "./types/enums";
 
 // Load environment variables
 dotenv.config();
@@ -85,7 +88,7 @@ const chessTimerManager = ChessTimerManager.getInstance();
 
 // Set up timer callbacks
 chessTimerManager.setOnTimerUpdate((gameId, timer) => {
-  io.to(gameId).emit("timer_update", {
+  io.to(gameId).emit(ServerToClientSocketEvents.TIMER_UPDATE, {
     gameId,
     whiteTimeLeft: timer.whiteTimeLeft,
     blackTimeLeft: timer.blackTimeLeft,
@@ -99,7 +102,7 @@ chessTimerManager.setOnTimerExpired(async (gameId, color) => {
   const userId = await getUserIdByColor(gameId, color);
 
   if (userId) {
-    io.to(gameId).emit("timer_expired", {
+    io.to(gameId).emit(ServerToClientSocketEvents.TIMER_EXPIRED, {
       gameId,
       userId,
       color,
@@ -109,7 +112,7 @@ chessTimerManager.setOnTimerExpired(async (gameId, color) => {
     await endGameByTimeout(gameId, color);
 
     // Notify game ended
-    io.to(gameId).emit("game_ended", {
+    io.to(gameId).emit(ServerToClientSocketEvents.GAME_ENDED, {
       gameId,
       userId,
       reason: color === "w" ? "WHITE_TIMEOUT" : "BLACK_TIMEOUT",
