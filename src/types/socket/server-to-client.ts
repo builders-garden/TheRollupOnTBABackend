@@ -156,6 +156,22 @@ export type ResetGameEvent = {
   userId: string;
 };
 
+// 13. Timer: Timer update
+export type TimerUpdateEvent = {
+  gameId: string;
+  whiteTimeLeft: number;
+  blackTimeLeft: number;
+  activeColor: "w" | "b" | null;
+  lastMoveAt: number;
+};
+
+// 14. Timer: Timer expired
+export type TimerExpiredEvent = {
+  gameId: string;
+  userId: string;
+  color: "w" | "b";
+};
+
 export type ServerToClientEvents = {
   [ServerToClientSocketEvents.JOIN_GAME_RESPONSE]: JoinGameResponseEvent;
   [ServerToClientSocketEvents.PAYMENT_CONFIRMED_ACK]: PaymentConfirmedAckEvent;
@@ -170,6 +186,8 @@ export type ServerToClientEvents = {
   [ServerToClientSocketEvents.PARTICIPANT_JOINED]: ParticipantJoinedEvent;
   [ServerToClientSocketEvents.MESSAGE_SENT_ACK]: MessageSentAckEvent;
   [ServerToClientSocketEvents.SPECTATOR_JOIN_ACK]: SpectatorJoinAckEvent;
+  [ServerToClientSocketEvents.TIMER_UPDATE]: TimerUpdateEvent;
+  [ServerToClientSocketEvents.TIMER_EXPIRED]: TimerExpiredEvent;
   [ServerToClientSocketEvents.ERROR]: ErrorEvent;
   [ServerToClientSocketEvents.BANNED]: BannedEvent;
   [ServerToClientSocketEvents.RESET_GAME]: ResetGameEvent;

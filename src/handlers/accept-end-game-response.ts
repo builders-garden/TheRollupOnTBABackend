@@ -8,6 +8,7 @@ import {
   GameState,
 } from "@prisma/client";
 import { ServerToClientSocketEvents } from "../types/enums";
+import { ChessTimerManager } from "../lib/timer-manager";
 
 export class AcceptGameEndResponseHandler extends SocketHandler {
   async handle({
@@ -32,7 +33,10 @@ export class AcceptGameEndResponseHandler extends SocketHandler {
       return;
     }
 
+    const chessTimerManager = ChessTimerManager.getInstance();
+
     if (accepted) {
+      // Draw accepted - end the game
       const participantColor = participant.color;
       const otherParticipantColor = otherParticipant.color;
       const gameEndReason =
@@ -43,11 +47,14 @@ export class AcceptGameEndResponseHandler extends SocketHandler {
           : otherParticipantColor === GameParticipantColor.WHITE
           ? GameEndReason.BLACK_REQUESTED_DRAW
           : GameEndReason.WHITE_REQUESTED_DRAW;
+      chessTimerManager.stopTimer(gameId);
+      chessTimerManager.deleteTimer(gameId);
       // update game state with draw
       await updateGame(gameId, {
         gameState: GameState.ENDED,
         gameResult: GameResult.DRAW,
         gameEndReason,
+        endedAt: new Date(),
       });
 
       this.emitToGame(gameId, ServerToClientSocketEvents.GAME_ENDED, {
@@ -56,7 +63,7 @@ export class AcceptGameEndResponseHandler extends SocketHandler {
         reason: gameEndReason,
       });
     } else {
-      // TODO: update game state with draw
+      // Draw rejected - resume the game
       await updateGame(gameId, {
         gameState: GameState.ACTIVE,
         gameResult: null,
@@ -67,7 +74,7 @@ export class AcceptGameEndResponseHandler extends SocketHandler {
         gameId,
         userId,
         status: GameState.ACTIVE,
-        message: "Game resumed",
+        message: "Draw request rejected. Game continues.",
       });
     }
   }
