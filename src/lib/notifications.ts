@@ -1,21 +1,17 @@
 import { z } from "zod";
 import { env } from "../config/env";
-import { v4 as uuidv4 } from "uuid";
+import ky from "ky";
+import type { FrameNotificationDetails } from "@farcaster/frame-sdk";
 
-const appUrl = env.APP_URL || "https://farville.farm";
-
-export type SendFrameNotificationResult =
+export type SendFarcasterNotificationResult =
   | {
       state: "error";
       error: unknown;
     }
   | { state: "no_token" }
-  | {
-      state: "success";
-      successfulTokens: string[];
-      invalidTokens: string[];
-      rateLimitedTokens: string[];
-    };
+  | { state: "invalid_token"; invalidTokens: string[] }
+  | { state: "rate_limit"; rateLimitedTokens: string[] }
+  | { state: "success" };
 
 interface SendNotificationRequest {
   notificationId: string;
@@ -33,53 +29,81 @@ const sendNotificationResponseSchema = z.object({
   }),
 });
 
+/**
+ * Send a notification to a Farcaster user.
+ *
+ * @param fid - The Farcaster user ID
+ * @param title - The title of the notification
+ * @param body - The body of the notification
+ * @param targetUrl - The URL to redirect to when the notification is clicked (optional)
+ * @param notificationDetails - The notification details of the user (required)
+ * @returns The result of the notification
+ */
 export async function sendFrameNotification({
-  notificationDetails,
+  fid,
   title,
   body,
+  targetUrl,
+  notificationDetails,
 }: {
-  notificationDetails: {
-    url: string;
-    token: string;
-  }[];
+  fid: number;
   title: string;
   body: string;
-}): Promise<SendFrameNotificationResult> {
-  if (!notificationDetails.length) {
-    return { state: "no_token" };
-  }
+  targetUrl?: string;
+  notificationDetails?: FrameNotificationDetails | null;
+}): Promise<SendFarcasterNotificationResult> {
+  if (!notificationDetails) return { state: "no_token" };
 
-  const response = await fetch(notificationDetails[0].url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      notificationId: uuidv4(),
+  const url = notificationDetails.url;
+  const tokens = [notificationDetails.token];
+
+  const response = await ky.post(url, {
+    json: {
+      notificationId: crypto.randomUUID(),
       title,
       body,
-      targetUrl: appUrl,
-      tokens: notificationDetails.map((detail) => detail.token),
-    } satisfies SendNotificationRequest),
+      targetUrl: targetUrl ?? env.APP_URL,
+      tokens,
+    } satisfies SendNotificationRequest,
   });
 
   const responseJson = await response.json();
 
   if (response.status === 200) {
     const responseBody = sendNotificationResponseSchema.safeParse(responseJson);
-    if (responseBody.success === false) {
-      // Malformed response
+    if (!responseBody.success) {
+      console.error(
+        `Error sending notification to ${fid}: malformed response`,
+        responseBody.error.errors
+      );
       return { state: "error", error: responseBody.error.errors };
     }
 
-    return {
-      state: "success",
-      successfulTokens: responseBody.data.result.successfulTokens,
-      invalidTokens: responseBody.data.result.invalidTokens,
-      rateLimitedTokens: responseBody.data.result.rateLimitedTokens,
-    };
+    if (responseBody.data.result.invalidTokens.length > 0) {
+      console.error(
+        `Error sending notification to ${fid}: invalid tokens`,
+        responseBody.data.result.invalidTokens
+      );
+      return {
+        state: "invalid_token",
+        invalidTokens: responseBody.data.result.invalidTokens,
+      };
+    }
+
+    if (responseBody.data.result.rateLimitedTokens.length > 0) {
+      console.error(
+        `Error sending notification to ${fid}: rate limited`,
+        responseBody.data.result.rateLimitedTokens
+      );
+      return {
+        state: "rate_limit",
+        rateLimitedTokens: responseBody.data.result.rateLimitedTokens,
+      };
+    }
+
+    return { state: "success" };
   }
 
-  // Error response
+  console.error(`Error sending notification to ${fid}: ${response.status}`);
   return { state: "error", error: responseJson };
 }

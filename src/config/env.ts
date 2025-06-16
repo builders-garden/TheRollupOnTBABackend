@@ -21,7 +21,7 @@ const envSchema = z.object({
   NEYNAR_API_KEY: z.string().min(1),
 
   // Application
-  APP_URL: z.string().url().optional(),
+  APP_URL: z.string().url().optional().default("https://checkmat.es"),
 
   // API Security
   API_SECRET_KEY: z.string().min(1),
