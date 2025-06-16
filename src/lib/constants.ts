@@ -43,7 +43,7 @@ export const GAME_OPTIONS: Record<
     [GameOption.BLUNT_4_20]: {
       label: "4:20 min",
       value: "4:20",
-      duration: 240, // 240 seconds
+      duration: 260, // 260 seconds
       increase: 0, // 0 second per round
     },
   },
