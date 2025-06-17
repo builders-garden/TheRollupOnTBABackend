@@ -12,13 +12,6 @@ export type Participant = {
   isCreator?: boolean;
 };
 
-export interface GameRoom {
-  participants: Map<string, Participant>;
-  board: string[][];
-  timer: NodeJS.Timeout | null;
-  timeRemaining: number;
-}
-
 export type Payment = {
   amount: string;
   amountUSDC: string;

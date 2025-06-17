@@ -17,6 +17,7 @@ export class ParticipantReadyHandler extends SocketHandler {
         userId,
         {
           status: GameParticipantStatus.READY,
+          socketId: this.socket.id,
         }
       );
       // 2 let user join the room

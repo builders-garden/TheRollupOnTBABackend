@@ -95,10 +95,10 @@ export async function restoreTimerFromDatabase(gameId: string): Promise<{
     });
 
     const whiteParticipant = participants.find(
-      (p: any) => p.color === GameParticipantColor.WHITE
+      (p) => p.color === GameParticipantColor.WHITE
     );
     const blackParticipant = participants.find(
-      (p: any) => p.color === GameParticipantColor.BLACK
+      (p) => p.color === GameParticipantColor.BLACK
     );
 
     if (!whiteParticipant || !blackParticipant) {
@@ -278,7 +278,7 @@ export async function recoverActiveTimers(): Promise<void> {
     for (const game of activeGames) {
       const timerState = await restoreTimerFromDatabase(game.id);
 
-      if (timerState && timerState.activeColor) {
+      if (timerState?.activeColor) {
         // Recreate timer with current state
         const timer = chessTimerManager.createTimer(
           game.id,
@@ -292,7 +292,7 @@ export async function recoverActiveTimers(): Promise<void> {
         if (timer) {
           // Check if timer should have expired during downtime
           const activeParticipant = game.participants.find(
-            (p: any) =>
+            (p) =>
               p.color ===
               (timerState.activeColor === "w"
                 ? GameParticipantColor.WHITE
