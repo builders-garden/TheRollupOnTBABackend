@@ -14,7 +14,6 @@ import { finalizeTimerValues } from "./timer-persistence";
 import type { Server } from "socket.io";
 import { ServerToClientSocketEvents } from "../types/enums";
 import { sendFrameNotification } from "./notifications";
-import { notificationDetailsSchema } from "@farcaster/frame-sdk";
 import { getGameEndReason } from "./utils";
 
 /**
@@ -105,23 +104,12 @@ export async function handleGameEnd(
 
     // 9. Send notification to all participants
     for (const participant of gameParticipants) {
-      if (participant.user.notificationDetails) {
-        const userNotificationDetails = notificationDetailsSchema.safeParse(
-          JSON.parse(participant.user.notificationDetails)
-        ).success
-          ? notificationDetailsSchema.parse(
-              JSON.parse(participant.user.notificationDetails)
-            )
-          : null;
-        if (userNotificationDetails) {
-          await sendFrameNotification({
-            fid: participant.user.fid,
-            title: "Game ended",
-            body: `Game ${whiteUser.user.username} vs ${blackUser.user.username} ended. ${gameResultExplanation}`,
-            notificationDetails: userNotificationDetails,
-          });
-        }
-      }
+      await sendFrameNotification({
+        fid: participant.user.fid,
+        title: "Game ended",
+        body: `Game ${whiteUser.user.username} vs ${blackUser.user.username} ended. ${gameResultExplanation}`,
+        notificationDetails: participant.user.notificationDetails,
+      });
     }
 
     console.log(

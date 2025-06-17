@@ -1,4 +1,4 @@
-import type { FrameNotificationDetails } from "@farcaster/frame-sdk";
+import type { FrameNotificationDetails } from "../../notifications";
 import { prisma } from "../client";
 
 /**
