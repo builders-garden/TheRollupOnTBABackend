@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { env } from "../config/env";
-import ky from "ky";
 
 export const frameNotificationDetailsSchema = z.object({
   url: z.string().url().min(1),
@@ -68,17 +67,18 @@ export async function sendFrameNotification({
     : null;
   if (!userNotificationDetails) return { state: "no_token" };
 
-  const url = userNotificationDetails.url;
-  const tokens = [userNotificationDetails.token];
-
-  const response = await ky.post(url, {
-    json: {
+  const response = await fetch(userNotificationDetails.url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
       notificationId: crypto.randomUUID(),
       title,
       body,
       targetUrl: targetUrl ?? env.APP_URL,
-      tokens,
-    } satisfies SendNotificationRequest,
+      tokens: [userNotificationDetails.token],
+    } satisfies SendNotificationRequest),
   });
 
   const responseJson = await response.json();
