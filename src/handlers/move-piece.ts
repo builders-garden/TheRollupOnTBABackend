@@ -7,6 +7,7 @@ import { Chess } from "chess.js";
 import { ChessTimerManager } from "../lib/timer-manager";
 import { updateTimerAfterMove } from "../lib/timer-persistence";
 import { GameEndReason } from "@prisma/client";
+import { handleGameEnd } from "../lib/game-end-handler";
 
 export class MovePieceHandler extends SocketHandler {
   async handle({ gameId, userId, move }: MovePieceEvent) {
@@ -85,11 +86,9 @@ export class MovePieceHandler extends SocketHandler {
         gameEndReason = GameEndReason.OTHER;
       }
 
-      this.emitToGame(gameId, ServerToClientSocketEvents.GAME_ENDED, {
-        gameId,
-        userId,
-        reason: gameEndReason,
-      });
+      // Use centralized game end handler for checkmate, stalemate, etc.
+      // This will stop timers, update database, and emit events
+      await handleGameEnd(this.io, gameId, userId, gameEndReason);
       return;
     }
 

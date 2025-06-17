@@ -14,11 +14,8 @@ import { handleError, handleNotFound } from "./middleware/error.middleware";
 
 import { setIOInstance } from "./lib/socket";
 import { ChessTimerManager } from "./lib/timer-manager";
-import {
-  getUserIdByColor,
-  endGameByTimeout,
-  recoverActiveTimers,
-} from "./lib/timer-persistence";
+import { recoverActiveTimers } from "./lib/timer-persistence";
+import { handleTimerExpiration } from "./lib/game-end-handler";
 import {
   AcceptGameEndResponseHandler,
   DisconnectParticipantHandler,
@@ -98,29 +95,10 @@ chessTimerManager.setOnTimerUpdate((gameId, timer) => {
 });
 
 chessTimerManager.setOnTimerExpired(async (gameId, color) => {
-  // Get user ID from game data
-  const userId = await getUserIdByColor(gameId, color);
-
-  if (userId) {
-    io.to(gameId).emit(ServerToClientSocketEvents.TIMER_EXPIRED, {
-      gameId,
-      userId,
-      color,
-    });
-
-    // End game due to timeout
-    await endGameByTimeout(gameId, color);
-
-    // Notify game ended
-    io.to(gameId).emit(ServerToClientSocketEvents.GAME_ENDED, {
-      gameId,
-      userId,
-      reason: color === "w" ? "WHITE_TIMEOUT" : "BLACK_TIMEOUT",
-    });
-  }
-
-  // Cleanup timer
-  chessTimerManager.deleteTimer(gameId);
+  console.log(
+    `[TIMER EXPIRED] Processing timeout for ${color} in game ${gameId}`
+  );
+  await handleTimerExpiration(io, gameId, color);
 });
 
 // Recover active timers from database on startup
@@ -229,6 +207,7 @@ httpServer.listen(port, () => {
 // Cleanup on server shutdown
 process.on("SIGINT", () => {
   console.log("Shutting down server...");
+  chessTimerManager.stopAllTimers();
   chessTimerManager.cleanup();
   httpServer.close();
   process.exit(0);
@@ -236,6 +215,7 @@ process.on("SIGINT", () => {
 
 process.on("SIGTERM", () => {
   console.log("Shutting down server...");
+  chessTimerManager.stopAllTimers();
   chessTimerManager.cleanup();
   httpServer.close();
   process.exit(0);

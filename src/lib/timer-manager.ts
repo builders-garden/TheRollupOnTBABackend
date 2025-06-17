@@ -247,6 +247,29 @@ export class ChessTimerManager {
   }
 
   /**
+   * Stop all active timers (useful for shutdown)
+   */
+  public stopAllTimers(): void {
+    console.log(`[TIMER] Stopping ${this.timers.size} active timers...`);
+
+    for (const [gameId, timer] of this.timers.entries()) {
+      if (timer.intervalId) {
+        clearInterval(timer.intervalId);
+        timer.intervalId = null;
+        timer.activeColor = null;
+        console.log(`[TIMER] Stopped timer for game: ${gameId}`);
+      }
+    }
+  }
+
+  /**
+   * Get count of active timers (for monitoring)
+   */
+  public getActiveTimerCount(): number {
+    return this.timers.size;
+  }
+
+  /**
    * Internal method to handle timer tick
    */
   private tickTimer(gameId: string): void {

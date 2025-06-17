@@ -1,14 +1,9 @@
 import { SocketHandler } from "./socket-handler";
 import type { AcceptGameEndResponseEvent } from "../types";
 import { getGameById, updateGame } from "../lib/prisma/queries/game";
-import {
-  GameEndReason,
-  GameParticipantColor,
-  GameResult,
-  GameState,
-} from "@prisma/client";
+import { GameEndReason, GameParticipantColor, GameState } from "@prisma/client";
 import { ServerToClientSocketEvents } from "../types/enums";
-import { ChessTimerManager } from "../lib/timer-manager";
+import { handleGameEnd } from "../lib/game-end-handler";
 
 export class AcceptGameEndResponseHandler extends SocketHandler {
   async handle({
@@ -33,35 +28,17 @@ export class AcceptGameEndResponseHandler extends SocketHandler {
       return;
     }
 
-    const chessTimerManager = ChessTimerManager.getInstance();
-
     if (accepted) {
-      // Draw accepted - end the game
+      // Draw accepted - end the game using centralized handler
       const participantColor = participant.color;
-      const otherParticipantColor = otherParticipant.color;
       const gameEndReason =
-        userId === participant.userId
-          ? participantColor === GameParticipantColor.WHITE
-            ? GameEndReason.WHITE_REQUESTED_DRAW
-            : GameEndReason.BLACK_REQUESTED_DRAW
-          : otherParticipantColor === GameParticipantColor.WHITE
-          ? GameEndReason.BLACK_REQUESTED_DRAW
-          : GameEndReason.WHITE_REQUESTED_DRAW;
-      chessTimerManager.stopTimer(gameId);
-      chessTimerManager.deleteTimer(gameId);
-      // update game state with draw
-      await updateGame(gameId, {
-        gameState: GameState.ENDED,
-        gameResult: GameResult.DRAW,
-        gameEndReason,
-        endedAt: new Date(),
-      });
+        participantColor === GameParticipantColor.WHITE
+          ? GameEndReason.WHITE_REQUESTED_DRAW
+          : GameEndReason.BLACK_REQUESTED_DRAW;
 
-      this.emitToGame(gameId, ServerToClientSocketEvents.GAME_ENDED, {
-        gameId,
-        userId,
-        reason: gameEndReason,
-      });
+      // Use centralized game end handler for draw acceptance
+      // This will stop timers, update database, and emit events
+      await handleGameEnd(this.io, gameId, userId, gameEndReason);
     } else {
       // Draw rejected - resume the game
       await updateGame(gameId, {
