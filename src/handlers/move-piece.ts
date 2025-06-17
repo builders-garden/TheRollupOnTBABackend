@@ -34,6 +34,7 @@ export class MovePieceHandler extends SocketHandler {
       checkMove = chess.move(move);
     } catch (error) {}
     if (!checkMove) {
+      // move is invalid
       const errorMessage = `Invalid move from ${move.from} to ${move.to}`;
       console.error(`[GAME] ${errorMessage} in game ${gameId}`);
       this.emitToGame(gameId, ServerToClientSocketEvents.MOVE_PIECE_ERROR, {
@@ -45,6 +46,18 @@ export class MovePieceHandler extends SocketHandler {
       return;
     }
 
+    // Switch timer to opponent
+    const chessTimerManager = ChessTimerManager.getInstance();
+    const timer = chessTimerManager.getTimer(gameId);
+
+    if (timer) {
+      chessTimerManager.switchTurn(gameId, move.color);
+
+      // Update database with new timer values
+      await updateTimerAfterMove(gameId, timer);
+    }
+
+    // update game with valid move
     const updatedGame = await updateGameWithMove(
       gameId,
       userId,
@@ -90,17 +103,6 @@ export class MovePieceHandler extends SocketHandler {
       // This will stop timers, update database, and emit events
       await handleGameEnd(this.io, gameId, userId, gameEndReason);
       return;
-    }
-
-    // Switch timer to opponent
-    const chessTimerManager = ChessTimerManager.getInstance();
-    const timer = chessTimerManager.getTimer(gameId);
-
-    if (timer) {
-      chessTimerManager.switchTurn(gameId, move.color);
-
-      // Update database with new timer values
-      await updateTimerAfterMove(gameId, timer);
     }
 
     // emit move to all participants
