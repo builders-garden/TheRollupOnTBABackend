@@ -3,7 +3,7 @@ import { SocketHandler } from "./socket-handler";
 import type { ParticipantReadyEvent } from "../types";
 import { ServerToClientSocketEvents } from "../types/enums";
 import { GameParticipantStatus, GameState } from "@prisma/client";
-import { updateGame } from "../lib/prisma/queries/game";
+import { getGameById, updateGame } from "../lib/prisma/queries/game";
 import { ChessTimerManager } from "../lib/timer-manager";
 import { initializeGameTimers } from "../lib/timer-persistence";
 import { getGameOptionTime } from "../lib/utils";
@@ -11,6 +11,17 @@ import { getGameOptionTime } from "../lib/utils";
 export class ParticipantReadyHandler extends SocketHandler {
   async handle({ gameId, userId }: ParticipantReadyEvent) {
     try {
+      // 0 check game state
+      const game = await getGameById(gameId);
+      if (!game) {
+        console.error(`[PARTICIPANT READY] Game ${gameId} not found`);
+        return;
+      }
+      if (game.gameState === GameState.ENDED) {
+        console.error(`[PARTICIPANT READY] Game ${gameId} is ended`);
+        return;
+      }
+
       // 1 update game participant status to ready
       const updatedGameParticipant = await updateGameParticipant(
         gameId,
