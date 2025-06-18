@@ -4,7 +4,14 @@ import {
   updateGameParticipant,
 } from "../lib/prisma/queries/game-participants";
 import { ServerToClientSocketEvents } from "../types/enums";
-import { GameParticipantStatus } from "@prisma/client";
+import {
+  GameParticipantStatus,
+  GameParticipantColor,
+  GameEndReason,
+} from "@prisma/client";
+
+// Store disconnect timeouts in memory (gameId+userId as key)
+export const disconnectTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
 export class DisconnectParticipantHandler extends SocketHandler {
   async handle(): Promise<void> {
@@ -45,7 +52,45 @@ export class DisconnectParticipantHandler extends SocketHandler {
           status: GameParticipantStatus.WAITING,
         }
       );
+
+      // Set 30s timeout for auto-forfeit
+      const timeoutKey = `${gameParticipant.gameId}:${gameParticipant.userId}`;
+      if (disconnectTimeouts.has(timeoutKey)) {
+        clearTimeout(disconnectTimeouts.get(timeoutKey));
+      }
+      const timeout = setTimeout(async () => {
+        // End game, opponent wins by default
+        const opponent = await this.getOpponent(
+          gameParticipant.gameId,
+          gameParticipant.userId
+        );
+        if (opponent) {
+          const { handleGameEnd } = await import("../lib/game-end-handler");
+          let reason: GameEndReason;
+          if (gameParticipant.color === GameParticipantColor.WHITE) {
+            reason = GameEndReason.WHITE_RESIGNED; // fallback: treat as resign
+          } else {
+            reason = GameEndReason.BLACK_RESIGNED;
+          }
+          await handleGameEnd(
+            this.io,
+            gameParticipant.gameId,
+            gameParticipant.userId,
+            reason
+          );
+        }
+        disconnectTimeouts.delete(timeoutKey);
+      }, 30000);
+      disconnectTimeouts.set(timeoutKey, timeout);
     }
+  }
+
+  // Helper to get opponent participant
+  async getOpponent(gameId: string, userId: string) {
+    const { getGameById } = await import("../lib/prisma/queries/game");
+    const game = await getGameById(gameId);
+    if (!game) return null;
+    return game.participants.find((p: any) => p.userId !== userId);
   }
 }
 // retrieve game by socket id

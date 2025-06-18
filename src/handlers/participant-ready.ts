@@ -7,6 +7,7 @@ import { getGameById, updateGame } from "../lib/prisma/queries/game";
 import { ChessTimerManager } from "../lib/timer-manager";
 import { initializeGameTimers } from "../lib/timer-persistence";
 import { getGameOptionTime } from "../lib/utils";
+import { disconnectTimeouts } from "./disconnect-participant";
 
 export class ParticipantReadyHandler extends SocketHandler {
   async handle({ gameId, userId }: ParticipantReadyEvent) {
@@ -31,6 +32,12 @@ export class ParticipantReadyHandler extends SocketHandler {
           socketId: this.socket.id,
         }
       );
+      // Cancel disconnect timeout if present
+      const timeoutKey = `${gameId}:${userId}`;
+      if (disconnectTimeouts && disconnectTimeouts.has(timeoutKey)) {
+        clearTimeout(disconnectTimeouts.get(timeoutKey));
+        disconnectTimeouts.delete(timeoutKey);
+      }
       // 2 let user join the room
       this.socket.join(gameId);
       console.log(
