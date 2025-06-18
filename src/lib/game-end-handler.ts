@@ -40,17 +40,6 @@ export async function handleGameEnd(
     console.log(`[GAME END] Timer stopped for game ${gameId}: ${timerStopped}`);
 
     // 3. Determine game result based on reason
-    const { gameResult, gameResultExplanation } = getGameEndReason(reason);
-
-    // 4. Update game state to ENDED
-    await updateGame(gameId, {
-      gameState: GameState.ENDED,
-      gameEndReason: reason,
-      gameResult,
-      endedAt: new Date(),
-    });
-
-    // 5. Update participant winners
     const game = await getGameById(gameId);
     if (!game) {
       console.error(`[GAME END] Game ${gameId} not found`);
@@ -71,7 +60,21 @@ export async function handleGameEnd(
       console.error(`[GAME END] Black user not found in game ${gameId}`);
       return;
     }
+    const { gameResult, gameResultExplanation } = getGameEndReason(
+      reason,
+      whiteUser.user.username,
+      blackUser.user.username
+    );
 
+    // 4. Update game state to ENDED
+    await updateGame(gameId, {
+      gameState: GameState.ENDED,
+      gameEndReason: reason,
+      gameResult,
+      endedAt: new Date(),
+    });
+
+    // 5. Update participant winners
     if (gameResult === GameResult.WHITE_WON) {
       await Promise.all([
         updateGameParticipant(gameId, whiteUser.userId, { isWinner: true }),

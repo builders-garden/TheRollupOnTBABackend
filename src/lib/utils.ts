@@ -27,7 +27,9 @@ export const getGameOptionTime = (mode: GameMode, option: GameOption) => {
 };
 
 export const getGameEndReason = (
-  reason: GameEndReason
+  reason: GameEndReason,
+  whiteParticipantUsername: string,
+  blackParticipantUsername: string
 ): {
   gameResult: GameResult;
   gameResultExplanation: string;
@@ -37,63 +39,63 @@ export const getGameEndReason = (
   switch (reason) {
     case GameEndReason.WHITE_CHECKMATE:
       gameResult = GameResult.WHITE_WON;
-      gameResultExplanation = "White won";
+      gameResultExplanation = `${whiteParticipantUsername} won`;
       break;
     case GameEndReason.BLACK_CHECKMATE:
       gameResult = GameResult.BLACK_WON;
-      gameResultExplanation = "Black won";
+      gameResultExplanation = `${blackParticipantUsername} won`;
       break;
     case GameEndReason.WHITE_RESIGNED:
       gameResult = GameResult.BLACK_WON;
-      gameResultExplanation = "Black won, white resigned";
+      gameResultExplanation = `${blackParticipantUsername} won, ${whiteParticipantUsername} resigned`;
       break;
     case GameEndReason.BLACK_RESIGNED:
       gameResult = GameResult.WHITE_WON;
-      gameResultExplanation = "White won, black resigned";
+      gameResultExplanation = `${whiteParticipantUsername} won, ${blackParticipantUsername} resigned`;
       break;
     case GameEndReason.WHITE_REQUESTED_DRAW:
       gameResult = GameResult.DRAW;
-      gameResultExplanation = "Draw, white requested";
+      gameResultExplanation = `Draw, ${whiteParticipantUsername} requested`;
       break;
     case GameEndReason.BLACK_REQUESTED_DRAW:
       gameResult = GameResult.DRAW;
-      gameResultExplanation = "Draw, black requested";
+      gameResultExplanation = `Draw, ${blackParticipantUsername} requested`;
       break;
     case GameEndReason.WHITE_STALEMATE:
       gameResult = GameResult.DRAW;
-      gameResultExplanation = "Draw, white stalemate";
+      gameResultExplanation = `Draw, ${whiteParticipantUsername} stalemate`;
       break;
     case GameEndReason.BLACK_STALEMATE:
       gameResult = GameResult.DRAW;
-      gameResultExplanation = "Draw, black stalemate";
+      gameResultExplanation = `Draw, ${blackParticipantUsername} stalemate`;
       break;
     case GameEndReason.WHITE_INSUFFICIENT_MATERIAL:
       gameResult = GameResult.DRAW;
-      gameResultExplanation = "Draw, white insufficient material";
+      gameResultExplanation = `Draw, ${whiteParticipantUsername} insufficient material`;
       break;
     case GameEndReason.BLACK_INSUFFICIENT_MATERIAL:
       gameResult = GameResult.DRAW;
-      gameResultExplanation = "Draw, black insufficient material";
+      gameResultExplanation = `Draw, ${blackParticipantUsername} insufficient material`;
       break;
     case GameEndReason.WHITE_THREEFOLD_REPETITION:
       gameResult = GameResult.DRAW;
-      gameResultExplanation = "Draw, white threefold repetition";
+      gameResultExplanation = `Draw, ${whiteParticipantUsername} threefold repetition`;
       break;
     case GameEndReason.BLACK_THREEFOLD_REPETITION:
       gameResult = GameResult.DRAW;
-      gameResultExplanation = "Draw, black threefold repetition";
+      gameResultExplanation = `Draw, ${blackParticipantUsername} threefold repetition`;
       break;
     case GameEndReason.WHITE_FIFTY_MOVE_RULE:
       gameResult = GameResult.DRAW;
-      gameResultExplanation = "Draw, white fifty move rule";
+      gameResultExplanation = `Draw, ${whiteParticipantUsername} fifty move rule`;
       break;
     case GameEndReason.WHITE_TIMEOUT:
       gameResult = GameResult.BLACK_WON;
-      gameResultExplanation = "Black won, white timeout";
+      gameResultExplanation = `${blackParticipantUsername} won, ${whiteParticipantUsername} timeout`;
       break;
     case GameEndReason.BLACK_TIMEOUT:
       gameResult = GameResult.WHITE_WON;
-      gameResultExplanation = "White won, black timeout";
+      gameResultExplanation = `${whiteParticipantUsername} won, ${blackParticipantUsername} timeout`;
       break;
     default:
       gameResult = GameResult.DRAW;
