@@ -43,6 +43,18 @@ export class ParticipantReadyHandler extends SocketHandler {
       console.log(
         `[PARTICIPANT READY] user ${userId} ready for game ${gameId}`
       );
+
+      // Always emit PARTICIPANT_READY_ACK when a participant becomes ready
+      this.emitToGame(
+        gameId,
+        ServerToClientSocketEvents.PARTICIPANT_READY_ACK,
+        {
+          gameId,
+          userId,
+          status: updatedGameParticipant.status,
+        }
+      );
+
       const participants = updatedGameParticipant.game.participants;
       const areAllParticipantsReady = participants.every(
         (participant) => participant.status === GameParticipantStatus.READY
@@ -95,16 +107,6 @@ export class ParticipantReadyHandler extends SocketHandler {
       } else {
         // 3 update game state to waiting
         await updateGame(gameId, { gameState: GameState.WAITING });
-        // 4 emit to all participants that the game is not ready
-        this.emitToGame(
-          gameId,
-          ServerToClientSocketEvents.PARTICIPANT_READY_ACK,
-          {
-            gameId,
-            userId,
-            status: updatedGameParticipant.status,
-          }
-        );
       }
     } catch (e) {
       console.error(
