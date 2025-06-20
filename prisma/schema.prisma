@@ -24,6 +24,11 @@ enum GameState {
   ENDED // game has ended
 }
 
+enum GameIsWhite {
+  CREATOR
+  OPPONENT
+}
+
 enum GameResult {
   DRAW
   WHITE_WON
@@ -178,7 +183,7 @@ model Game {
   opponentId String?
   opponent   GameParticipant? @relation("OpponentGameParticipant", fields: [opponentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  white String? // creator or opponent
+  isWhite GameIsWhite?
 
   gameMode   GameMode   @default(RAPID)
   gameOption GameOption @default(RAPID_5)
