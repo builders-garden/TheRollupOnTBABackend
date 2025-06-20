@@ -1,16 +1,7 @@
-import {
-  GameState,
-  GameEndReason,
-  GameResult,
-  GameParticipantColor,
-} from "@prisma/client";
+import { GameState, GameEndReason } from "@prisma/client";
 import { ChessTimerManager } from "./timer-manager";
-import {
-  getGameById,
-  updateGame,
-  updateGameParticipant,
-} from "./prisma/queries";
-import { finalizeTimerValues } from "./timer-persistence";
+import { getGameById, updateGame } from "./prisma/queries";
+import { finalizeTimerValues } from "./prisma/queries/timer-persistence";
 import type { Server } from "socket.io";
 import { ServerToClientSocketEvents } from "../types/enums";
 import { sendFrameNotification } from "./notifications";
@@ -45,21 +36,43 @@ export async function handleGameEnd(
       console.error(`[GAME END] Game ${gameId} not found`);
       return;
     }
-    const gameParticipants = game.participants;
-    const whiteUser = gameParticipants.find(
-      (participant) => participant.color === GameParticipantColor.WHITE
-    );
-    if (!whiteUser) {
-      console.error(`[GAME END] White user not found in game ${gameId}`);
+
+    // Find white and black participants
+    let whiteUser = null;
+    let blackUser = null;
+
+    if (game.isWhite === null) {
+      console.error(`[GAME END] Game ${gameId} has no color assignment`);
       return;
     }
-    const blackUser = gameParticipants.find(
-      (participant) => participant.color === GameParticipantColor.BLACK
-    );
-    if (!blackUser) {
-      console.error(`[GAME END] Black user not found in game ${gameId}`);
+
+    // Determine which participant is white based on isWhite field
+    const creatorParticipant = game.creator;
+    const opponentParticipant = game.opponent;
+
+    if (!creatorParticipant || !opponentParticipant) {
+      console.error(
+        `[GAME END] Creator or opponent not found in game ${gameId}`
+      );
       return;
     }
+
+    if (game.isWhite === "CREATOR") {
+      whiteUser = creatorParticipant;
+      blackUser = opponentParticipant;
+    } else {
+      whiteUser = opponentParticipant;
+      blackUser = creatorParticipant;
+    }
+
+    // Ensure users exist
+    if (!whiteUser?.user || !blackUser?.user) {
+      console.error(
+        `[GAME END] User data not found for participants in game ${gameId}`
+      );
+      return;
+    }
+
     const { gameResult, gameResultExplanation } = getGameEndReason(
       reason,
       whiteUser.user.username,
@@ -74,19 +87,8 @@ export async function handleGameEnd(
       endedAt: new Date(),
     });
 
-    // 5. Update participant winners
-    if (gameResult === GameResult.WHITE_WON) {
-      await Promise.all([
-        updateGameParticipant(gameId, whiteUser.userId, { isWinner: true }),
-        updateGameParticipant(gameId, blackUser.userId, { isWinner: false }),
-      ]);
-    } else if (gameResult === GameResult.BLACK_WON) {
-      await Promise.all([
-        updateGameParticipant(gameId, whiteUser.userId, { isWinner: false }),
-        updateGameParticipant(gameId, blackUser.userId, { isWinner: true }),
-      ]);
-    }
-    // For draws, both players remain with default isWinner: false
+    // Note: Winner determination is now handled at the game level via gameResult
+    // Individual participant winner tracking has been removed from the schema
 
     // 6. Finalize timer values in database
     if (timer) {
@@ -105,14 +107,16 @@ export async function handleGameEnd(
       reason,
     });
 
-    // 9. Send notification to all participants
-    for (const participant of gameParticipants) {
-      await sendFrameNotification({
-        fid: participant.user.fid,
-        title: "Game ended",
-        body: `Game ${whiteUser.user.username} vs ${blackUser.user.username} ended. ${gameResultExplanation}`,
-        notificationDetails: participant.user.notificationDetails,
-      });
+    // 6. Send notification to all participants
+    for (const participant of [creatorParticipant, opponentParticipant]) {
+      if (participant.user) {
+        await sendFrameNotification({
+          fid: participant.user.fid,
+          title: "Game ended",
+          body: `Game ${whiteUser.user.username} vs ${blackUser.user.username} ended. ${gameResultExplanation}`,
+          notificationDetails: participant.user.notificationDetails,
+        });
+      }
     }
 
     console.log(
@@ -146,7 +150,9 @@ export async function handleTimerExpiration(
 ): Promise<void> {
   try {
     // Get user ID for the player who timed out
-    const { getUserIdByColor } = await import("./timer-persistence");
+    const { getUserIdByColor } = await import(
+      "./prisma/queries/timer-persistence"
+    );
     const userId = await getUserIdByColor(gameId, color);
 
     if (!userId) {

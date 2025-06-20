@@ -1,7 +1,9 @@
-import { prisma } from "./prisma/client";
-import { GameParticipantColor, GameState, GameEndReason } from "@prisma/client";
-import type { GameTimer } from "./timer-manager";
-import { ChessTimerManager } from "./timer-manager";
+import { prisma } from "../client";
+import { GameState, GameEndReason } from "@prisma/client";
+import type { GameTimer } from "../../timer-manager";
+import { ChessTimerManager } from "../../timer-manager";
+import { getParticipantByColor } from "../../utils";
+import { getGameById } from "./game";
 
 /**
  * Initialize timer values when a game starts
@@ -11,18 +13,11 @@ export async function initializeGameTimers(
   duration: number
 ): Promise<void> {
   try {
-    await prisma.game.update({
-      where: { id: gameId },
+    await prisma.gameParticipant.updateMany({
+      where: { gameId: gameId },
       data: {
-        participants: {
-          updateMany: {
-            where: { gameId },
-            data: {
-              timeLeft: duration,
-              endTime: null, // Reset any previous end time
-            },
-          },
-        },
+        timeLeft: duration,
+        endTime: null, // Reset any previous end time
       },
     });
     console.log(`[TIMER DB] Initialized timer values for game ${gameId}`);
@@ -43,13 +38,29 @@ export async function updateTimerAfterMove(
   timer: GameTimer
 ): Promise<void> {
   try {
+    // Get the game with participants to determine who is who
+    const game = await getGameById(gameId);
+
+    if (!game) {
+      console.error(`[TIMER DB] Game ${gameId} not found`);
+      return;
+    }
+
+    // Find white and black participants
+    const whiteParticipant = getParticipantByColor(game, "w");
+    const blackParticipant = getParticipantByColor(game, "b");
+
+    if (!whiteParticipant || !blackParticipant) {
+      console.error(
+        `[TIMER DB] Could not find participants for game ${gameId}`
+      );
+      return;
+    }
+
     await prisma.$transaction([
       // Update white player's time
-      prisma.gameParticipant.updateMany({
-        where: {
-          gameId,
-          color: GameParticipantColor.WHITE,
-        },
+      prisma.gameParticipant.update({
+        where: { id: whiteParticipant.id },
         data: {
           timeLeft: timer.whiteTimeLeft,
           endTime:
@@ -60,11 +71,8 @@ export async function updateTimerAfterMove(
       }),
 
       // Update black player's time
-      prisma.gameParticipant.updateMany({
-        where: {
-          gameId,
-          color: GameParticipantColor.BLACK,
-        },
+      prisma.gameParticipant.update({
+        where: { id: blackParticipant.id },
         data: {
           timeLeft: timer.blackTimeLeft,
           endTime:
@@ -89,17 +97,14 @@ export async function restoreTimerFromDatabase(gameId: string): Promise<{
   activeColor: "w" | "b" | null;
 } | null> {
   try {
-    const participants = await prisma.gameParticipant.findMany({
-      where: { gameId },
-      include: { game: true },
-    });
+    const game = await getGameById(gameId);
+    if (!game) {
+      console.error(`[TIMER DB] Game ${gameId} not found`);
+      return null;
+    }
 
-    const whiteParticipant = participants.find(
-      (p) => p.color === GameParticipantColor.WHITE
-    );
-    const blackParticipant = participants.find(
-      (p) => p.color === GameParticipantColor.BLACK
-    );
+    const whiteParticipant = getParticipantByColor(game, "w");
+    const blackParticipant = getParticipantByColor(game, "b");
 
     if (!whiteParticipant || !blackParticipant) {
       console.error(`[TIMER DB] Invalid game participants for game ${gameId}`);
@@ -107,7 +112,6 @@ export async function restoreTimerFromDatabase(gameId: string): Promise<{
     }
 
     // Determine active color from game state
-    const game = participants[0].game;
     let activeColor: "w" | "b" | null = null;
 
     if (game.gameState === GameState.ACTIVE) {
@@ -139,38 +143,52 @@ export async function finalizeTimerValues(
   gameEndReason: GameEndReason
 ): Promise<void> {
   try {
+    // Get the game with participants to determine who is who
+    const game = await getGameById(gameId);
+
+    if (!game) {
+      console.error(`[TIMER DB] Game ${gameId} not found`);
+      return;
+    }
+
+    // Find white and black participants
+    const whiteParticipant = getParticipantByColor(game, "w");
+    const blackParticipant = getParticipantByColor(game, "b");
+
+    if (!whiteParticipant || !blackParticipant) {
+      console.error(
+        `[TIMER DB] Could not find participants for game ${gameId}`
+      );
+      return;
+    }
+
     await prisma.game.update({
       where: { id: gameId },
       data: {
         gameState: GameState.ENDED,
         gameEndReason,
         endedAt: new Date(),
-        participants: {
-          updateMany: [
-            {
-              where: {
-                gameId,
-                color: GameParticipantColor.WHITE,
-              },
-              data: {
-                timeLeft: timer.whiteTimeLeft,
-                endTime: null, // Clear end time when game ends
-              },
-            },
-            {
-              where: {
-                gameId,
-                color: GameParticipantColor.BLACK,
-              },
-              data: {
-                timeLeft: timer.blackTimeLeft,
-                endTime: null,
-              },
-            },
-          ],
-        },
       },
     });
+
+    // Update participant timers separately
+    await prisma.$transaction([
+      prisma.gameParticipant.update({
+        where: { id: whiteParticipant.id },
+        data: {
+          timeLeft: timer.whiteTimeLeft,
+          endTime: null, // Clear end time when game ends
+        },
+      }),
+      prisma.gameParticipant.update({
+        where: { id: blackParticipant.id },
+        data: {
+          timeLeft: timer.blackTimeLeft,
+          endTime: null,
+        },
+      }),
+    ]);
+
     console.log(`[TIMER DB] Finalized timer values for game ${gameId}`);
   } catch (error) {
     console.error(
@@ -189,15 +207,13 @@ export async function getUserIdByColor(
   color: "w" | "b"
 ): Promise<string | null> {
   try {
-    const participant = await prisma.gameParticipant.findFirst({
-      where: {
-        gameId,
-        color:
-          color === "w"
-            ? GameParticipantColor.WHITE
-            : GameParticipantColor.BLACK,
-      },
-    });
+    const game = await getGameById(gameId);
+    if (!game) {
+      console.error(`[TIMER DB] Game ${gameId} not found`);
+      return null;
+    }
+
+    const participant = getParticipantByColor(game, color);
     return participant?.userId || null;
   } catch (error) {
     console.error(
@@ -228,28 +244,6 @@ export async function endGameByTimeout(
       },
     });
 
-    // Update participant statuses
-    await prisma.$transaction([
-      prisma.gameParticipant.updateMany({
-        where: {
-          gameId,
-          color: GameParticipantColor.WHITE,
-        },
-        data: {
-          isWinner: color === "b", // White wins if black timed out
-        },
-      }),
-      prisma.gameParticipant.updateMany({
-        where: {
-          gameId,
-          color: GameParticipantColor.BLACK,
-        },
-        data: {
-          isWinner: color === "w", // Black wins if white timed out
-        },
-      }),
-    ]);
-
     console.log(`[TIMER DB] Ended game ${gameId} due to ${color} timeout`);
   } catch (error) {
     console.error(`[TIMER DB] Error ending game ${gameId} by timeout:`, error);
@@ -269,7 +263,16 @@ export async function recoverActiveTimers(): Promise<void> {
         gameState: GameState.ACTIVE,
       },
       include: {
-        participants: true,
+        creator: {
+          include: {
+            user: true,
+          },
+        },
+        opponent: {
+          include: {
+            user: true,
+          },
+        },
       },
     });
 
@@ -291,12 +294,9 @@ export async function recoverActiveTimers(): Promise<void> {
 
         if (timer) {
           // Check if timer should have expired during downtime
-          const activeParticipant = game.participants.find(
-            (p) =>
-              p.color ===
-              (timerState.activeColor === "w"
-                ? GameParticipantColor.WHITE
-                : GameParticipantColor.BLACK)
+          const activeParticipant = getParticipantByColor(
+            game,
+            timerState.activeColor
           );
 
           if (activeParticipant?.endTime) {

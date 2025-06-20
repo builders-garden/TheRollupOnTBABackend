@@ -13,11 +13,10 @@ import type { GameParticipant, Prisma } from "@prisma/client";
  */
 export const getGameParticipant = async (gameId: string, userId: string) => {
   if (!userId || !gameId) return null;
-  return prisma.gameParticipant.findUnique({
-    where: { userId_gameId: { userId, gameId } },
+  return prisma.gameParticipant.findFirst({
+    where: { userId, gameId },
     include: {
       user: true,
-      game: true,
     },
   });
 };
@@ -38,7 +37,6 @@ export const getGameParticipantsBySocketId = async (
     where: { socketId },
     include: {
       user: true,
-      game: true,
     },
   });
 };
@@ -59,16 +57,9 @@ export const updateGameParticipant = async (
   userId: string,
   gameParticipant: Prisma.GameParticipantUpdateInput
 ) => {
-  return prisma.gameParticipant.update({
-    where: { userId_gameId: { userId, gameId } },
+  return prisma.gameParticipant.updateMany({
+    where: { userId, gameId },
     data: gameParticipant,
-    include: {
-      game: {
-        include: {
-          participants: true,
-        },
-      },
-    },
   });
 };
 

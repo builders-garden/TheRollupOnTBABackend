@@ -14,7 +14,7 @@ import { handleError, handleNotFound } from "./middleware/error.middleware";
 
 import { setIOInstance } from "./lib/socket";
 import { ChessTimerManager } from "./lib/timer-manager";
-import { recoverActiveTimers } from "./lib/timer-persistence";
+import { recoverActiveTimers } from "./lib/prisma/queries/timer-persistence";
 import { handleTimerExpiration } from "./lib/game-end-handler";
 import {
   AcceptGameEndResponseHandler,
