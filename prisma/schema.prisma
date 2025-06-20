@@ -163,7 +163,6 @@ model GameParticipant {
   // Relationships
   user         User?  @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   bot          Bot?   @relation(fields: [botId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  game         Game   @relation(fields: [gameId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   gameCreator  Game[] @relation("CreatorGameParticipant")
   gameOpponent Game[] @relation("OpponentGameParticipant")
 
@@ -206,9 +205,8 @@ model Game {
   endedAt   DateTime?
   updatedAt DateTime  @updatedAt
 
-  spectators   GameSpectator[]
-  messages     GameChatMessage[]
-  participants GameParticipant[]
+  spectators GameSpectator[]
+  messages   GameChatMessage[]
 
   @@index([id], map: "idx_games_id")
   @@index([gameState], map: "idx_games_gameState")
