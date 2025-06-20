@@ -1,7 +1,7 @@
 import { SocketHandler } from "./socket-handler";
 import type { AcceptGameEndResponseEvent } from "../types";
 import { getGameById, updateGame } from "../lib/prisma/queries/game";
-import { GameEndReason, GameParticipantColor, GameState } from "@prisma/client";
+import { GameEndReason, GameState } from "@prisma/client";
 import { ServerToClientSocketEvents } from "../types/enums";
 import { handleGameEnd } from "../lib/game-end-handler";
 
@@ -30,11 +30,23 @@ export class AcceptGameEndResponseHandler extends SocketHandler {
 
     if (accepted) {
       // Draw accepted - end the game using centralized handler
-      const participantColor = participant.color;
-      const gameEndReason =
-        participantColor === GameParticipantColor.WHITE
-          ? GameEndReason.WHITE_REQUESTED_DRAW
-          : GameEndReason.BLACK_REQUESTED_DRAW;
+      // Determine which color the accepting participant is
+      let gameEndReason: GameEndReason;
+
+      // Check if this participant is the creator or opponent
+      if (participant.id === game.creatorId) {
+        // This is the creator accepting the draw
+        gameEndReason =
+          game.isWhite === "CREATOR"
+            ? GameEndReason.WHITE_REQUESTED_DRAW
+            : GameEndReason.BLACK_REQUESTED_DRAW;
+      } else {
+        // This is the opponent accepting the draw
+        gameEndReason =
+          game.isWhite === "CREATOR"
+            ? GameEndReason.BLACK_REQUESTED_DRAW
+            : GameEndReason.WHITE_REQUESTED_DRAW;
+      }
 
       // Use centralized game end handler for draw acceptance
       // This will stop timers, update database, and emit events

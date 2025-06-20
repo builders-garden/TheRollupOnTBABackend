@@ -24,14 +24,10 @@ export class ParticipantReadyHandler extends SocketHandler {
       }
 
       // 1 update game participant status to ready
-      const updatedGameParticipant = await updateGameParticipant(
-        gameId,
-        userId,
-        {
-          status: GameParticipantStatus.READY,
-          socketId: this.socket.id,
-        }
-      );
+      await updateGameParticipant(gameId, userId, {
+        status: GameParticipantStatus.READY,
+        socketId: this.socket.id,
+      });
       // Cancel disconnect timeout if present
       const timeoutKey = `${gameId}:${userId}`;
       if (disconnectTimeouts && disconnectTimeouts.has(timeoutKey)) {
@@ -43,7 +39,17 @@ export class ParticipantReadyHandler extends SocketHandler {
       console.log(
         `[PARTICIPANT READY] user ${userId} ready for game ${gameId}`
       );
-      const participants = updatedGameParticipant.game.participants;
+
+      // Get updated game to check all participants
+      const updatedGame = await getGameById(gameId);
+      if (!updatedGame) {
+        console.error(
+          `[PARTICIPANT READY] Game ${gameId} not found after update`
+        );
+        return;
+      }
+
+      const participants = updatedGame.participants;
       const areAllParticipantsReady = participants.every(
         (participant) => participant.status === GameParticipantStatus.READY
       );
@@ -53,7 +59,7 @@ export class ParticipantReadyHandler extends SocketHandler {
 
         // 3.1 Initialize and start timer (only if not already exists)
         const chessTimerManager = ChessTimerManager.getInstance();
-        const game = updatedGameParticipant.game;
+        const game = updatedGame;
 
         // Check if timer already exists for this game
         const existingTimer = chessTimerManager.getTimer(gameId);
@@ -102,7 +108,7 @@ export class ParticipantReadyHandler extends SocketHandler {
           {
             gameId,
             userId,
-            status: updatedGameParticipant.status,
+            status: GameParticipantStatus.READY,
           }
         );
       }

@@ -13,7 +13,7 @@ export class PaymentConfirmedHandler extends SocketHandler {
       `[PAYMENT] Participant ${userId} confirmed stake in game ${gameId} with txHash: https://basescan.org/tx/${payment.txHash}`
     );
     const gameParticipant = await getGameParticipant(gameId, userId);
-    if (!gameParticipant || !gameParticipant.game) {
+    if (!gameParticipant) {
       console.error(
         `[PAYMENT] Game participant ${userId} not found in game ${gameId}`
       );

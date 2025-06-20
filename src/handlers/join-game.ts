@@ -19,12 +19,12 @@ export class JoinGameHandler extends SocketHandler {
         status: game.gameState,
         participants: game.participants.map((p) => ({
           socketId: this.socket.id,
-          participantFid: p.user.fid,
-          participantUsername: p.user.username,
-          avatarUrl: p.user.avatarUrl || "",
+          participantFid: p.user?.fid || 0,
+          participantUsername: p.user?.username || "Unknown",
+          avatarUrl: p.user?.avatarUrl || "",
           ready: p.status === GameParticipantStatus.READY,
           score: 0, // TODO: get score from db
-          isCreator: p.isCreator,
+          isCreator: p.id === game.creatorId,
         })),
       });
     } catch (e) {
