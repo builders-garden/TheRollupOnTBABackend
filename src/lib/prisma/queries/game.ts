@@ -15,7 +15,12 @@ export function getGameById(gameId: string) {
   return prisma.game.findUnique({
     where: { id: gameId },
     include: {
-      participants: {
+      creator: {
+        include: {
+          user: true,
+        },
+      },
+      opponent: {
         include: {
           user: true,
         },

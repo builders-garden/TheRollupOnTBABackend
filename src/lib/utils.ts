@@ -3,6 +3,10 @@ import {
   GameMode,
   GameOption,
   GameResult,
+  GameIsWhite,
+  type GameParticipant,
+  type Game,
+  type User,
 } from "@prisma/client";
 import { GAME_OPTIONS } from "./constants";
 
@@ -104,4 +108,20 @@ export const getGameEndReason = (
   }
 
   return { gameResult, gameResultExplanation };
+};
+
+/**
+ * Get participant by color
+ */
+export const getParticipantByColor = (
+  game: Game & {
+    creator: GameParticipant & { user: User | null };
+    opponent: (GameParticipant & { user: User | null }) | null;
+  },
+  color: "w" | "b"
+): GameParticipant | null => {
+  if (color === "w") {
+    return game.isWhite === GameIsWhite.CREATOR ? game.creator : game.opponent;
+  }
+  return game.isWhite === GameIsWhite.CREATOR ? game.opponent : game.creator;
 };

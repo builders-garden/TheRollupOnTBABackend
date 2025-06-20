@@ -1,7 +1,7 @@
 import { SocketHandler } from "./socket-handler";
 import type { AcceptGameEndResponseEvent } from "../types";
 import { getGameById, updateGame } from "../lib/prisma/queries/game";
-import { GameEndReason, GameParticipantColor, GameState } from "@prisma/client";
+import { GameEndReason, GameState } from "@prisma/client";
 import { ServerToClientSocketEvents } from "../types/enums";
 import { handleGameEnd } from "../lib/game-end-handler";
 
@@ -20,9 +20,20 @@ export class AcceptGameEndResponseHandler extends SocketHandler {
       console.error(`[GAME] Game ${gameId} not found`);
       return;
     }
+    if (
+      (!game.creator.user || !game.opponent?.user) &&
+      game.creator.user?.id !== userId &&
+      game.opponent?.user?.id !== userId
+    ) {
+      console.error(
+        `[GAME] User ${userId} is not a participant in game ${gameId}`
+      );
+      return;
+    }
+    const isCreator = game.creator.user?.id === userId;
 
-    const participant = game.participants.find((p) => p.userId === userId);
-    const otherParticipant = game.participants.find((p) => p.userId !== userId);
+    const participant = isCreator ? game.creator : game.opponent;
+    const otherParticipant = isCreator ? game.opponent : game.creator;
     if (!participant || !otherParticipant) {
       console.error(`[GAME] Participants not found for game ${gameId}`);
       return;
@@ -30,11 +41,23 @@ export class AcceptGameEndResponseHandler extends SocketHandler {
 
     if (accepted) {
       // Draw accepted - end the game using centralized handler
-      const participantColor = participant.color;
-      const gameEndReason =
-        participantColor === GameParticipantColor.WHITE
-          ? GameEndReason.WHITE_REQUESTED_DRAW
-          : GameEndReason.BLACK_REQUESTED_DRAW;
+      // Determine which color the accepting participant is
+      let gameEndReason: GameEndReason;
+
+      // Check if this participant is the creator or opponent
+      if (participant.id === game.creatorId) {
+        // This is the creator accepting the draw
+        gameEndReason =
+          game.isWhite === "CREATOR"
+            ? GameEndReason.WHITE_REQUESTED_DRAW
+            : GameEndReason.BLACK_REQUESTED_DRAW;
+      } else {
+        // This is the opponent accepting the draw
+        gameEndReason =
+          game.isWhite === "CREATOR"
+            ? GameEndReason.BLACK_REQUESTED_DRAW
+            : GameEndReason.WHITE_REQUESTED_DRAW;
+      }
 
       // Use centralized game end handler for draw acceptance
       // This will stop timers, update database, and emit events
