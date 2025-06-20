@@ -4,7 +4,7 @@ import { getGameById, updateGame } from "../lib/prisma/queries/game";
 import { ServerToClientSocketEvents } from "../types/enums";
 import { GameState } from "@prisma/client";
 import { ChessTimerManager } from "../lib/timer-manager";
-import { initializeGameTimers } from "../lib/timer-persistence";
+import { initializeGameTimers } from "../lib/prisma/queries/timer-persistence";
 import { getGameOptionTime } from "../lib/utils";
 
 export class ResetGameHandler extends SocketHandler {

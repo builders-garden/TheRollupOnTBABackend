@@ -5,7 +5,7 @@ import { ServerToClientSocketEvents } from "../types/enums";
 import { GameParticipantStatus, GameState } from "@prisma/client";
 import { getGameById, updateGame } from "../lib/prisma/queries/game";
 import { ChessTimerManager } from "../lib/timer-manager";
-import { initializeGameTimers } from "../lib/timer-persistence";
+import { initializeGameTimers } from "../lib/prisma/queries/timer-persistence";
 import { getGameOptionTime } from "../lib/utils";
 import { disconnectTimeouts } from "./disconnect-participant";
 
@@ -30,7 +30,7 @@ export class ParticipantReadyHandler extends SocketHandler {
       });
       // Cancel disconnect timeout if present
       const timeoutKey = `${gameId}:${userId}`;
-      if (disconnectTimeouts && disconnectTimeouts.has(timeoutKey)) {
+      if (disconnectTimeouts?.has(timeoutKey)) {
         clearTimeout(disconnectTimeouts.get(timeoutKey));
         disconnectTimeouts.delete(timeoutKey);
       }
@@ -49,7 +49,9 @@ export class ParticipantReadyHandler extends SocketHandler {
         return;
       }
 
-      const participants = updatedGame.participants;
+      const participants = [updatedGame.creator, updatedGame.opponent].filter(
+        (p) => p !== null
+      );
       const areAllParticipantsReady = participants.every(
         (participant) => participant.status === GameParticipantStatus.READY
       );

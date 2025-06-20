@@ -1,8 +1,9 @@
-import { prisma } from "./prisma/client";
+import { prisma } from "../client";
 import { GameState, GameEndReason } from "@prisma/client";
-import type { GameTimer } from "./timer-manager";
-import { ChessTimerManager } from "./timer-manager";
-import { getParticipantByColor } from "./utils";
+import type { GameTimer } from "../../timer-manager";
+import { ChessTimerManager } from "../../timer-manager";
+import { getParticipantByColor } from "../../utils";
+import { getGameById } from "./game";
 
 /**
  * Initialize timer values when a game starts
@@ -12,18 +13,11 @@ export async function initializeGameTimers(
   duration: number
 ): Promise<void> {
   try {
-    await prisma.game.update({
-      where: { id: gameId },
+    await prisma.gameParticipant.updateMany({
+      where: { gameId: gameId },
       data: {
-        participants: {
-          updateMany: {
-            where: { gameId },
-            data: {
-              timeLeft: duration,
-              endTime: null, // Reset any previous end time
-            },
-          },
-        },
+        timeLeft: duration,
+        endTime: null, // Reset any previous end time
       },
     });
     console.log(`[TIMER DB] Initialized timer values for game ${gameId}`);
@@ -45,10 +39,7 @@ export async function updateTimerAfterMove(
 ): Promise<void> {
   try {
     // Get the game with participants to determine who is who
-    const game = await prisma.game.findUnique({
-      where: { id: gameId },
-      include: { participants: true },
-    });
+    const game = await getGameById(gameId);
 
     if (!game) {
       console.error(`[TIMER DB] Game ${gameId} not found`);
@@ -106,11 +97,7 @@ export async function restoreTimerFromDatabase(gameId: string): Promise<{
   activeColor: "w" | "b" | null;
 } | null> {
   try {
-    const game = await prisma.game.findUnique({
-      where: { id: gameId },
-      include: { participants: true },
-    });
-
+    const game = await getGameById(gameId);
     if (!game) {
       console.error(`[TIMER DB] Game ${gameId} not found`);
       return null;
@@ -157,10 +144,7 @@ export async function finalizeTimerValues(
 ): Promise<void> {
   try {
     // Get the game with participants to determine who is who
-    const game = await prisma.game.findUnique({
-      where: { id: gameId },
-      include: { participants: true },
-    });
+    const game = await getGameById(gameId);
 
     if (!game) {
       console.error(`[TIMER DB] Game ${gameId} not found`);
@@ -223,11 +207,7 @@ export async function getUserIdByColor(
   color: "w" | "b"
 ): Promise<string | null> {
   try {
-    const game = await prisma.game.findUnique({
-      where: { id: gameId },
-      include: { participants: true },
-    });
-
+    const game = await getGameById(gameId);
     if (!game) {
       console.error(`[TIMER DB] Game ${gameId} not found`);
       return null;
@@ -283,7 +263,16 @@ export async function recoverActiveTimers(): Promise<void> {
         gameState: GameState.ACTIVE,
       },
       include: {
-        participants: true,
+        creator: {
+          include: {
+            user: true,
+          },
+        },
+        opponent: {
+          include: {
+            user: true,
+          },
+        },
       },
     });
 

@@ -1,7 +1,7 @@
 import { GameState, GameEndReason } from "@prisma/client";
 import { ChessTimerManager } from "./timer-manager";
 import { getGameById, updateGame } from "./prisma/queries";
-import { finalizeTimerValues } from "./timer-persistence";
+import { finalizeTimerValues } from "./prisma/queries/timer-persistence";
 import type { Server } from "socket.io";
 import { ServerToClientSocketEvents } from "../types/enums";
 import { sendFrameNotification } from "./notifications";
@@ -36,7 +36,6 @@ export async function handleGameEnd(
       console.error(`[GAME END] Game ${gameId} not found`);
       return;
     }
-    const gameParticipants = game.participants;
 
     // Find white and black participants
     let whiteUser = null;
@@ -48,12 +47,8 @@ export async function handleGameEnd(
     }
 
     // Determine which participant is white based on isWhite field
-    const creatorParticipant = gameParticipants.find(
-      (p) => p.id === game.creatorId
-    );
-    const opponentParticipant = gameParticipants.find(
-      (p) => p.id === game.opponentId
-    );
+    const creatorParticipant = game.creator;
+    const opponentParticipant = game.opponent;
 
     if (!creatorParticipant || !opponentParticipant) {
       console.error(
@@ -113,7 +108,7 @@ export async function handleGameEnd(
     });
 
     // 6. Send notification to all participants
-    for (const participant of gameParticipants) {
+    for (const participant of [creatorParticipant, opponentParticipant]) {
       if (participant.user) {
         await sendFrameNotification({
           fid: participant.user.fid,
@@ -155,7 +150,9 @@ export async function handleTimerExpiration(
 ): Promise<void> {
   try {
     // Get user ID for the player who timed out
-    const { getUserIdByColor } = await import("./timer-persistence");
+    const { getUserIdByColor } = await import(
+      "./prisma/queries/timer-persistence"
+    );
     const userId = await getUserIdByColor(gameId, color);
 
     if (!userId) {

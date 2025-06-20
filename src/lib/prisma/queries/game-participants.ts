@@ -17,7 +17,6 @@ export const getGameParticipant = async (gameId: string, userId: string) => {
     where: { userId, gameId },
     include: {
       user: true,
-      game: true,
     },
   });
 };
@@ -38,7 +37,6 @@ export const getGameParticipantsBySocketId = async (
     where: { socketId },
     include: {
       user: true,
-      game: true,
     },
   });
 };

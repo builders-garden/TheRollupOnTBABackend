@@ -5,7 +5,7 @@ import { getGameById, updateGameWithMove } from "../lib/prisma/queries/game";
 import { ServerToClientSocketEvents } from "../types/enums";
 import { Chess } from "chess.js";
 import { ChessTimerManager } from "../lib/timer-manager";
-import { updateTimerAfterMove } from "../lib/timer-persistence";
+import { updateTimerAfterMove } from "../lib/prisma/queries/timer-persistence";
 import { GameEndReason } from "@prisma/client";
 import { handleGameEnd } from "../lib/game-end-handler";
 

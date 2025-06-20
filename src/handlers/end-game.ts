@@ -16,10 +16,15 @@ export class EndGameHandler extends SocketHandler {
       console.error(`[GAME] Game ${gameId} not found`);
       return;
     }
+    if (!game.opponent) {
+      console.error(`[GAME] Game ${gameId} has no opponent`);
+      return;
+    }
 
-    const participant = game.participants.find((p) => p.userId === userId);
-    if (!participant) {
-      console.error(`[GAME] Participant ${userId} not found`);
+    const isUserParticipant =
+      game.creator.userId === userId || game.opponent.userId === userId;
+    if (!isUserParticipant) {
+      console.error(`[GAME] Participant ${userId} not found in game ${gameId}`);
       return;
     }
 

@@ -20,9 +20,20 @@ export class AcceptGameEndResponseHandler extends SocketHandler {
       console.error(`[GAME] Game ${gameId} not found`);
       return;
     }
+    if (
+      (!game.creator.user || !game.opponent?.user) &&
+      game.creator.user?.id !== userId &&
+      game.opponent?.user?.id !== userId
+    ) {
+      console.error(
+        `[GAME] User ${userId} is not a participant in game ${gameId}`
+      );
+      return;
+    }
+    const isCreator = game.creator.user?.id === userId;
 
-    const participant = game.participants.find((p) => p.userId === userId);
-    const otherParticipant = game.participants.find((p) => p.userId !== userId);
+    const participant = isCreator ? game.creator : game.opponent;
+    const otherParticipant = isCreator ? game.opponent : game.creator;
     if (!participant || !otherParticipant) {
       console.error(`[GAME] Participants not found for game ${gameId}`);
       return;

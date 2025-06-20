@@ -4,8 +4,9 @@ import {
   GameOption,
   GameResult,
   GameIsWhite,
-  GameParticipant,
-  Game,
+  type GameParticipant,
+  type Game,
+  type User,
 } from "@prisma/client";
 import { GAME_OPTIONS } from "./constants";
 
@@ -110,81 +111,17 @@ export const getGameEndReason = (
 };
 
 /**
- * Determine if a participant is white based on game configuration
- */
-export const isParticipantWhite = (
-  game: Game,
-  participantId: string
-): boolean => {
-  if (game.isWhite === GameIsWhite.CREATOR) {
-    return game.creatorId === participantId;
-  } else if (game.isWhite === GameIsWhite.OPPONENT) {
-    return game.opponentId === participantId;
-  }
-  return false; // Default fallback
-};
-
-/**
- * Determine if a participant is the creator
- */
-export const isParticipantCreator = (
-  game: Game,
-  participantId: string
-): boolean => {
-  return game.creatorId === participantId;
-};
-
-/**
- * Get participant color as string
- */
-export const getParticipantColor = (
-  game: Game,
-  participantId: string
-): "w" | "b" | null => {
-  if (!game.isWhite) return null;
-
-  if (game.isWhite === GameIsWhite.CREATOR) {
-    return game.creatorId === participantId ? "w" : "b";
-  } else if (game.isWhite === GameIsWhite.OPPONENT) {
-    return game.opponentId === participantId ? "w" : "b";
-  }
-  return null;
-};
-
-/**
- * Get white participant from game
- */
-export const getWhiteParticipant = (
-  game: Game & { participants: GameParticipant[] }
-): GameParticipant | null => {
-  if (!game.isWhite) return null;
-
-  const whiteParticipantId =
-    game.isWhite === GameIsWhite.CREATOR ? game.creatorId : game.opponentId;
-
-  return game.participants.find((p) => p.id === whiteParticipantId) || null;
-};
-
-/**
- * Get black participant from game
- */
-export const getBlackParticipant = (
-  game: Game & { participants: GameParticipant[] }
-): GameParticipant | null => {
-  if (!game.isWhite) return null;
-
-  const blackParticipantId =
-    game.isWhite === GameIsWhite.CREATOR ? game.opponentId : game.creatorId;
-
-  return game.participants.find((p) => p.id === blackParticipantId) || null;
-};
-
-/**
  * Get participant by color
  */
 export const getParticipantByColor = (
-  game: Game & { participants: GameParticipant[] },
+  game: Game & {
+    creator: GameParticipant & { user: User | null };
+    opponent: (GameParticipant & { user: User | null }) | null;
+  },
   color: "w" | "b"
 ): GameParticipant | null => {
-  return color === "w" ? getWhiteParticipant(game) : getBlackParticipant(game);
+  if (color === "w") {
+    return game.isWhite === GameIsWhite.CREATOR ? game.creator : game.opponent;
+  }
+  return game.isWhite === GameIsWhite.CREATOR ? game.opponent : game.creator;
 };

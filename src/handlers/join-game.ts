@@ -17,15 +17,17 @@ export class JoinGameHandler extends SocketHandler {
       this.emitToGame(game.id, ServerToClientSocketEvents.JOIN_GAME_RESPONSE, {
         gameId: game.id,
         status: game.gameState,
-        participants: game.participants.map((p) => ({
-          socketId: this.socket.id,
-          participantFid: p.user?.fid || 0,
-          participantUsername: p.user?.username || "Unknown",
-          avatarUrl: p.user?.avatarUrl || "",
-          ready: p.status === GameParticipantStatus.READY,
-          score: 0, // TODO: get score from db
-          isCreator: p.id === game.creatorId,
-        })),
+        participants: [game.creator, game.opponent]
+          .filter((p) => p !== null)
+          .map((p) => ({
+            socketId: this.socket.id,
+            participantFid: p.user?.fid || 0,
+            participantUsername: p.user?.username || "Unknown",
+            avatarUrl: p.user?.avatarUrl || "",
+            ready: p.status === GameParticipantStatus.READY,
+            score: 0, // TODO: get score from db
+            isCreator: p.id === game.creatorId,
+          })),
       });
     } catch (e) {
       console.error(`[CREATE GAME] Error creating game: ${e}`);

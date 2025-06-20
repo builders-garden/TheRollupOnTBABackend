@@ -62,9 +62,15 @@ export class DisconnectParticipantHandler extends SocketHandler {
       }
       const timeout = setTimeout(async () => {
         // End game, opponent wins by default
+        if (!gameParticipant.userId) {
+          console.log(
+            `[DISCONNECT] No userId for participant ${gameParticipant.id}`
+          );
+          return;
+        }
         const opponent = await this.getOpponent(
           gameParticipant.gameId,
-          gameParticipant.userId!
+          gameParticipant.userId
         );
         if (opponent) {
           const { handleGameEnd } = await import("../lib/game-end-handler");
@@ -73,7 +79,7 @@ export class DisconnectParticipantHandler extends SocketHandler {
           await handleGameEnd(
             this.io,
             gameParticipant.gameId,
-            gameParticipant.userId!,
+            gameParticipant.userId,
             reason
           );
         }
@@ -88,7 +94,8 @@ export class DisconnectParticipantHandler extends SocketHandler {
     const { getGameById } = await import("../lib/prisma/queries/game");
     const game = await getGameById(gameId);
     if (!game) return null;
-    return game.participants.find((p: any) => p.userId !== userId);
+    const isUserCreator = game.creator.user?.id === userId;
+    return isUserCreator ? game.opponent : game.creator;
   }
 }
 // retrieve game by socket id
