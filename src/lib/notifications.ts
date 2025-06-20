@@ -1,7 +1,14 @@
 import { z } from "zod";
 import { env } from "../config/env";
-import ky from "ky";
-import type { FrameNotificationDetails } from "@farcaster/frame-sdk";
+
+export const frameNotificationDetailsSchema = z.object({
+  url: z.string().url().min(1),
+  token: z.string().min(1),
+});
+
+export type FrameNotificationDetails = z.infer<
+  typeof frameNotificationDetailsSchema
+>;
 
 export type SendFarcasterNotificationResult =
   | {
@@ -50,21 +57,28 @@ export async function sendFrameNotification({
   title: string;
   body: string;
   targetUrl?: string;
-  notificationDetails?: FrameNotificationDetails | null;
+  notificationDetails?: string | null;
 }): Promise<SendFarcasterNotificationResult> {
   if (!notificationDetails) return { state: "no_token" };
+  const userNotificationDetails = frameNotificationDetailsSchema.safeParse(
+    JSON.parse(notificationDetails)
+  ).success
+    ? frameNotificationDetailsSchema.parse(JSON.parse(notificationDetails))
+    : null;
+  if (!userNotificationDetails) return { state: "no_token" };
 
-  const url = notificationDetails.url;
-  const tokens = [notificationDetails.token];
-
-  const response = await ky.post(url, {
-    json: {
+  const response = await fetch(userNotificationDetails.url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
       notificationId: crypto.randomUUID(),
       title,
       body,
       targetUrl: targetUrl ?? env.APP_URL,
-      tokens,
-    } satisfies SendNotificationRequest,
+      tokens: [userNotificationDetails.token],
+    } satisfies SendNotificationRequest),
   });
 
   const responseJson = await response.json();

@@ -11,13 +11,31 @@ import type { GameParticipant, Prisma } from "@prisma/client";
  * @param userId - The id of the user
  * @returns The game participant if found, otherwise null
  */
-export const getGameParticipant = async (
-  gameId: string,
-  userId: string
-): Promise<GameParticipant | null> => {
+export const getGameParticipant = async (gameId: string, userId: string) => {
   if (!userId || !gameId) return null;
   return prisma.gameParticipant.findUnique({
     where: { userId_gameId: { userId, gameId } },
+    include: {
+      user: true,
+      game: true,
+    },
+  });
+};
+
+/**
+ * Get all game participants by socket id.
+ *
+ * This function gets all game participants by socket id.
+ * It takes a socket id and returns the game participants if found.
+ *
+ * @param socketId - The id of the socket
+ * @returns The game participants if found, otherwise null
+ */
+export const getGameParticipantsBySocketId = async (
+  socketId: string
+): Promise<GameParticipant[]> => {
+  return prisma.gameParticipant.findMany({
+    where: { socketId },
     include: {
       user: true,
       game: true,
@@ -44,7 +62,13 @@ export const updateGameParticipant = async (
   return prisma.gameParticipant.update({
     where: { userId_gameId: { userId, gameId } },
     data: gameParticipant,
-    include: { game: { include: { participants: true } } },
+    include: {
+      game: {
+        include: {
+          participants: true,
+        },
+      },
+    },
   });
 };
 

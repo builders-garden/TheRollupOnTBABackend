@@ -183,7 +183,7 @@ Any participant can end the game, either by resigning or by requesting a draw.
 
 If a user disconnects (close app, drop connection, etc.), the game continues up to the participant remaining time.
 
-- `participant_left`: The server notifies the client that the opponent left the game.
+- `participant_left`: The server notifies the client that some participant left the game.
 - `participant_joined`: The server notifies the client that the opponent joined the game.
 
 ## Extras

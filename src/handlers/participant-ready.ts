@@ -3,27 +3,58 @@ import { SocketHandler } from "./socket-handler";
 import type { ParticipantReadyEvent } from "../types";
 import { ServerToClientSocketEvents } from "../types/enums";
 import { GameParticipantStatus, GameState } from "@prisma/client";
-import { updateGame } from "../lib/prisma/queries/game";
+import { getGameById, updateGame } from "../lib/prisma/queries/game";
 import { ChessTimerManager } from "../lib/timer-manager";
 import { initializeGameTimers } from "../lib/timer-persistence";
 import { getGameOptionTime } from "../lib/utils";
+import { disconnectTimeouts } from "./disconnect-participant";
 
 export class ParticipantReadyHandler extends SocketHandler {
   async handle({ gameId, userId }: ParticipantReadyEvent) {
     try {
+      // 0 check game state
+      const game = await getGameById(gameId);
+      if (!game) {
+        console.error(`[PARTICIPANT READY] Game ${gameId} not found`);
+        return;
+      }
+      if (game.gameState === GameState.ENDED) {
+        console.error(`[PARTICIPANT READY] Game ${gameId} is ended`);
+        return;
+      }
+
       // 1 update game participant status to ready
       const updatedGameParticipant = await updateGameParticipant(
         gameId,
         userId,
         {
           status: GameParticipantStatus.READY,
+          socketId: this.socket.id,
         }
       );
+      // Cancel disconnect timeout if present
+      const timeoutKey = `${gameId}:${userId}`;
+      if (disconnectTimeouts && disconnectTimeouts.has(timeoutKey)) {
+        clearTimeout(disconnectTimeouts.get(timeoutKey));
+        disconnectTimeouts.delete(timeoutKey);
+      }
       // 2 let user join the room
       this.socket.join(gameId);
       console.log(
         `[PARTICIPANT READY] user ${userId} ready for game ${gameId}`
       );
+
+      // Always emit PARTICIPANT_READY_ACK when a participant becomes ready
+      this.emitToGame(
+        gameId,
+        ServerToClientSocketEvents.PARTICIPANT_READY_ACK,
+        {
+          gameId,
+          userId,
+          status: updatedGameParticipant.status,
+        }
+      );
+
       const participants = updatedGameParticipant.game.participants;
       const areAllParticipantsReady = participants.every(
         (participant) => participant.status === GameParticipantStatus.READY
@@ -76,16 +107,6 @@ export class ParticipantReadyHandler extends SocketHandler {
       } else {
         // 3 update game state to waiting
         await updateGame(gameId, { gameState: GameState.WAITING });
-        // 4 emit to all participants that the game is not ready
-        this.emitToGame(
-          gameId,
-          ServerToClientSocketEvents.PARTICIPANT_READY_ACK,
-          {
-            gameId,
-            userId,
-            status: updatedGameParticipant.status,
-          }
-        );
       }
     } catch (e) {
       console.error(

@@ -1,9 +1,20 @@
-import { GameState, GameEndReason, GameResult } from "@prisma/client";
+import {
+  GameState,
+  GameEndReason,
+  GameResult,
+  GameParticipantColor,
+} from "@prisma/client";
 import { ChessTimerManager } from "./timer-manager";
-import { updateGame, updateGameParticipant } from "./prisma/queries";
+import {
+  getGameById,
+  updateGame,
+  updateGameParticipant,
+} from "./prisma/queries";
 import { finalizeTimerValues } from "./timer-persistence";
 import type { Server } from "socket.io";
 import { ServerToClientSocketEvents } from "../types/enums";
+import { sendFrameNotification } from "./notifications";
+import { getGameEndReason } from "./utils";
 
 /**
  * Central handler for all game ending scenarios
@@ -29,35 +40,31 @@ export async function handleGameEnd(
     console.log(`[GAME END] Timer stopped for game ${gameId}: ${timerStopped}`);
 
     // 3. Determine game result based on reason
-    let gameResult: GameResult | null = null;
-    if (
-      reason === GameEndReason.WHITE_CHECKMATE ||
-      reason === GameEndReason.BLACK_TIMEOUT
-    ) {
-      gameResult = GameResult.WHITE_WON;
-    } else if (
-      reason === GameEndReason.BLACK_CHECKMATE ||
-      reason === GameEndReason.WHITE_TIMEOUT
-    ) {
-      gameResult = GameResult.BLACK_WON;
-    } else if (reason === GameEndReason.WHITE_RESIGNED) {
-      gameResult = GameResult.BLACK_WON;
-    } else if (reason === GameEndReason.BLACK_RESIGNED) {
-      gameResult = GameResult.WHITE_WON;
-    } else if (
-      reason === GameEndReason.WHITE_REQUESTED_DRAW ||
-      reason === GameEndReason.BLACK_REQUESTED_DRAW ||
-      reason === GameEndReason.WHITE_STALEMATE ||
-      reason === GameEndReason.BLACK_STALEMATE ||
-      reason === GameEndReason.WHITE_INSUFFICIENT_MATERIAL ||
-      reason === GameEndReason.BLACK_INSUFFICIENT_MATERIAL ||
-      reason === GameEndReason.WHITE_THREEFOLD_REPETITION ||
-      reason === GameEndReason.BLACK_THREEFOLD_REPETITION ||
-      reason === GameEndReason.WHITE_FIFTY_MOVE_RULE ||
-      reason === GameEndReason.BLACK_FIFTY_MOVE_RULE
-    ) {
-      gameResult = GameResult.DRAW;
+    const game = await getGameById(gameId);
+    if (!game) {
+      console.error(`[GAME END] Game ${gameId} not found`);
+      return;
     }
+    const gameParticipants = game.participants;
+    const whiteUser = gameParticipants.find(
+      (participant) => participant.color === GameParticipantColor.WHITE
+    );
+    if (!whiteUser) {
+      console.error(`[GAME END] White user not found in game ${gameId}`);
+      return;
+    }
+    const blackUser = gameParticipants.find(
+      (participant) => participant.color === GameParticipantColor.BLACK
+    );
+    if (!blackUser) {
+      console.error(`[GAME END] Black user not found in game ${gameId}`);
+      return;
+    }
+    const { gameResult, gameResultExplanation } = getGameEndReason(
+      reason,
+      whiteUser.user.username,
+      blackUser.user.username
+    );
 
     // 4. Update game state to ENDED
     await updateGame(gameId, {
@@ -70,13 +77,13 @@ export async function handleGameEnd(
     // 5. Update participant winners
     if (gameResult === GameResult.WHITE_WON) {
       await Promise.all([
-        updateGameParticipant(gameId, "white_user_id", { isWinner: true }),
-        updateGameParticipant(gameId, "black_user_id", { isWinner: false }),
+        updateGameParticipant(gameId, whiteUser.userId, { isWinner: true }),
+        updateGameParticipant(gameId, blackUser.userId, { isWinner: false }),
       ]);
     } else if (gameResult === GameResult.BLACK_WON) {
       await Promise.all([
-        updateGameParticipant(gameId, "white_user_id", { isWinner: false }),
-        updateGameParticipant(gameId, "black_user_id", { isWinner: true }),
+        updateGameParticipant(gameId, whiteUser.userId, { isWinner: false }),
+        updateGameParticipant(gameId, blackUser.userId, { isWinner: true }),
       ]);
     }
     // For draws, both players remain with default isWinner: false
@@ -97,6 +104,16 @@ export async function handleGameEnd(
       userId,
       reason,
     });
+
+    // 9. Send notification to all participants
+    for (const participant of gameParticipants) {
+      await sendFrameNotification({
+        fid: participant.user.fid,
+        title: "Game ended",
+        body: `Game ${whiteUser.user.username} vs ${blackUser.user.username} ended. ${gameResultExplanation}`,
+        notificationDetails: participant.user.notificationDetails,
+      });
+    }
 
     console.log(
       `[GAME END] Game ${gameId} ended successfully. Reason: ${reason}. Timers stopped.`
