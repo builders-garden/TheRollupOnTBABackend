@@ -120,6 +120,45 @@ export class MatchmakingQueue {
   }
 
   /**
+   * Comprehensive removal of a player from all queues by both userId and socketId
+   * Used after successful match creation to ensure no stale entries
+   */
+  public removePlayerFromAllQueues(userId: string, socketId?: string): boolean {
+    let removed = false;
+    for (const [queueKey, players] of this.queue.entries()) {
+      // Remove by userId
+      let playerIndex = players.findIndex((p) => p.userId === userId);
+      while (playerIndex !== -1) {
+        const removedPlayer = players.splice(playerIndex, 1)[0];
+        console.log(
+          `[MATCHMAKING] Removed player ${removedPlayer.username} from queue for ${queueKey} (userId cleanup)`
+        );
+        removed = true;
+        playerIndex = players.findIndex((p) => p.userId === userId);
+      }
+
+      // Also remove by socketId if provided (for extra safety)
+      if (socketId) {
+        playerIndex = players.findIndex((p) => p.socketId === socketId);
+        while (playerIndex !== -1) {
+          const removedPlayer = players.splice(playerIndex, 1)[0];
+          console.log(
+            `[MATCHMAKING] Removed player ${removedPlayer.username} from queue for ${queueKey} (socketId cleanup)`
+          );
+          removed = true;
+          playerIndex = players.findIndex((p) => p.socketId === socketId);
+        }
+      }
+
+      if (removed) {
+        // Update queue status for remaining players
+        this.emitQueueStatusToAll(queueKey);
+      }
+    }
+    return removed;
+  }
+
+  /**
    * Get the current queue status for a specific game mode/option
    */
   public getQueueStatus(
@@ -158,6 +197,12 @@ export class MatchmakingQueue {
     try {
       // Create the game
       const gameId = await this.createMatchedGame(player1, player2);
+
+      console.log(`[MATCHMAKING] Game ${gameId} created successfully. Cleaning up players from all queues.`);
+
+      // Explicitly remove both players from ALL queues to prevent stale matches
+      this.removePlayerFromAllQueues(player1.userId, player1.socketId);
+      this.removePlayerFromAllQueues(player2.userId, player2.socketId);
 
       // Notify both players that a match was found
       const io = getIOInstance();
@@ -263,8 +308,9 @@ export class MatchmakingQueue {
         gameOption: player1.gameOption,
         wageAmount: "0", // Free for casual games
         isWhite: isWhite,
-        gameState: GameState.CREATED,
+        gameState: GameState.ACTIVE, // Start immediately for matchmaking games
         currentFen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        startedAt: new Date(), // Set start time for active games
         creator: {
           create: {
             gameId: gameId,
@@ -278,7 +324,7 @@ export class MatchmakingQueue {
           create: {
             gameId: gameId,
             userId: user2.id,
-            status: GameParticipantStatus.WAITING,
+            status: GameParticipantStatus.JOINED, // Both players auto-join in matchmaking
             paid: true, // Free game
             timeLeft: duration,
           },
