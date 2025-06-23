@@ -207,28 +207,6 @@ export class MatchmakingQueue {
       this.removePlayerFromAllQueues(player1.userId, player1.socketId);
       this.removePlayerFromAllQueues(player2.userId, player2.socketId);
 
-      // Notify both players that a match was found
-      const io = getIOInstance();
-      if (io) {
-        io.to(player1.socketId).emit(ServerToClientSocketEvents.MATCH_FOUND, {
-          gameId,
-          opponent: {
-            userId: player2.userId,
-            username: player2.username,
-            userFid: player2.userFid,
-          },
-        });
-
-        io.to(player2.socketId).emit(ServerToClientSocketEvents.MATCH_FOUND, {
-          gameId,
-          opponent: {
-            userId: player1.userId,
-            username: player1.username,
-            userFid: player1.userFid,
-          },
-        });
-      }
-
       // Update queue status for remaining players
       this.emitQueueStatusToAll(queueKey);
     } catch (error) {
@@ -343,6 +321,32 @@ export class MatchmakingQueue {
         },
       },
     });
+
+    // Notify both players that a match was found
+    const io = getIOInstance();
+    if (io) {
+      io.to(player1.socketId).emit(ServerToClientSocketEvents.MATCH_FOUND, {
+        gameId: newGame.id,
+        opponent: {
+          userId: player2.userId,
+          username: player2.username,
+          userFid: player2.userFid,
+          avatarUrl: user2.avatarUrl,
+        },
+        finalWageAmount,
+      });
+
+      io.to(player2.socketId).emit(ServerToClientSocketEvents.MATCH_FOUND, {
+        gameId: newGame.id,
+        opponent: {
+          userId: player1.userId,
+          username: player1.username,
+          userFid: player1.userFid,
+          avatarUrl: user1.avatarUrl,
+        },
+        finalWageAmount,
+      });
+    }
 
     return newGame.id;
   }

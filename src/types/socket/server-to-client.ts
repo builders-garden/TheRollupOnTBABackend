@@ -186,7 +186,9 @@ export type MatchFoundEvent = {
     userId: string;
     username: string;
     userFid: number;
+    avatarUrl: string | null; // Profile picture URL
   };
+  finalWageAmount: string; // The minimum bet amount agreed upon
 };
 
 // 17. Matchmaking: Queue joined
