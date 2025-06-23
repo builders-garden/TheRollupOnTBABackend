@@ -20,6 +20,7 @@ export interface QueuePlayer {
   socketId: string;
   gameMode: GameMode;
   gameOption: GameOption;
+  wageAmount: string; // Bet amount in USDC (as string to match Prisma decimal)
   queuedAt: number;
 }
 
@@ -198,7 +199,9 @@ export class MatchmakingQueue {
       // Create the game
       const gameId = await this.createMatchedGame(player1, player2);
 
-      console.log(`[MATCHMAKING] Game ${gameId} created successfully. Cleaning up players from all queues.`);
+      console.log(
+        `[MATCHMAKING] Game ${gameId} created successfully. Cleaning up players from all queues.`
+      );
 
       // Explicitly remove both players from ALL queues to prevent stale matches
       this.removePlayerFromAllQueues(player1.userId, player1.socketId);
@@ -292,6 +295,15 @@ export class MatchmakingQueue {
       player1.gameOption
     );
 
+    // Calculate minimum wage amount between the two players
+    const player1Wage = parseFloat(player1.wageAmount);
+    const player2Wage = parseFloat(player2.wageAmount);
+    const finalWageAmount = Math.min(player1Wage, player2Wage).toString();
+
+    console.log(
+      `[MATCHMAKING] Player1 bet: $${player1.wageAmount}, Player2 bet: $${player2.wageAmount}, Final bet: $${finalWageAmount}`
+    );
+
     // Randomly assign colors
     const randomNumber = Math.random();
     const isWhite =
@@ -306,7 +318,7 @@ export class MatchmakingQueue {
         gameType: GameType.RANDOM,
         gameMode: player1.gameMode,
         gameOption: player1.gameOption,
-        wageAmount: "0", // Free for casual games
+        wageAmount: finalWageAmount, // Use the minimum bet amount
         isWhite: isWhite,
         gameState: GameState.ACTIVE, // Start immediately for matchmaking games
         currentFen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
@@ -316,7 +328,7 @@ export class MatchmakingQueue {
             gameId: gameId,
             userId: user1.id,
             status: GameParticipantStatus.JOINED,
-            paid: true, // Free game
+            paid: true, // Assume paid for now (could add payment validation later)
             timeLeft: duration,
           },
         },
@@ -325,7 +337,7 @@ export class MatchmakingQueue {
             gameId: gameId,
             userId: user2.id,
             status: GameParticipantStatus.JOINED, // Both players auto-join in matchmaking
-            paid: true, // Free game
+            paid: true, // Assume paid for now (could add payment validation later)
             timeLeft: duration,
           },
         },

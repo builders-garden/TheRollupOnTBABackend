@@ -92,6 +92,7 @@ export type JoinMatchmakingQueueEvent = {
   username: string;
   gameMode: GameMode;
   gameOption: GameOption;
+  wageAmount: string; // Bet amount in USDC (as string to match Prisma decimal)
 };
 
 export type LeaveMatchmakingQueueEvent = {

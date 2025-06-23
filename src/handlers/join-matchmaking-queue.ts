@@ -10,16 +10,25 @@ export class JoinMatchmakingQueueHandler extends SocketHandler {
     username,
     gameMode,
     gameOption,
+    wageAmount,
   }: JoinMatchmakingQueueEvent) {
     try {
       // Validate input data
-      if (!userId || !userFid || !username || !gameMode || !gameOption) {
+      if (
+        !userId ||
+        !userFid ||
+        !username ||
+        !gameMode ||
+        !gameOption ||
+        !wageAmount
+      ) {
         console.error(`[MATCHMAKING] Invalid data:`, {
           userId,
           userFid,
           username,
           gameMode,
           gameOption,
+          wageAmount,
         });
         this.socket.emit(ServerToClientSocketEvents.ERROR, {
           code: 400,
@@ -51,6 +60,7 @@ export class JoinMatchmakingQueueHandler extends SocketHandler {
         socketId: this.socket.id,
         gameMode,
         gameOption,
+        wageAmount,
         queuedAt: Date.now(),
       });
 
