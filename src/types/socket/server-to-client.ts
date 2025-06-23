@@ -172,6 +172,35 @@ export type TimerExpiredEvent = {
   color: "w" | "b";
 };
 
+// 15. Matchmaking: Queue status update
+export type QueueStatusUpdateEvent = {
+  playersInQueue: number;
+  estimatedWaitTime: number;
+  position: number;
+};
+
+// 16. Matchmaking: Match found
+export type MatchFoundEvent = {
+  gameId: string;
+  opponent: {
+    userId: string;
+    username: string;
+    userFid: number;
+  };
+};
+
+// 17. Matchmaking: Queue joined
+export type QueueJoinedEvent = {
+  playersInQueue: number;
+  estimatedWaitTime: number;
+  position: number;
+};
+
+// 18. Matchmaking: Queue left
+export type QueueLeftEvent = {
+  success: boolean;
+};
+
 export type ServerToClientEvents = {
   [ServerToClientSocketEvents.JOIN_GAME_RESPONSE]: JoinGameResponseEvent;
   [ServerToClientSocketEvents.PAYMENT_CONFIRMED_ACK]: PaymentConfirmedAckEvent;
@@ -188,6 +217,10 @@ export type ServerToClientEvents = {
   [ServerToClientSocketEvents.SPECTATOR_JOIN_ACK]: SpectatorJoinAckEvent;
   [ServerToClientSocketEvents.TIMER_UPDATE]: TimerUpdateEvent;
   [ServerToClientSocketEvents.TIMER_EXPIRED]: TimerExpiredEvent;
+  [ServerToClientSocketEvents.QUEUE_STATUS_UPDATE]: QueueStatusUpdateEvent;
+  [ServerToClientSocketEvents.MATCH_FOUND]: MatchFoundEvent;
+  [ServerToClientSocketEvents.QUEUE_JOINED]: QueueJoinedEvent;
+  [ServerToClientSocketEvents.QUEUE_LEFT]: QueueLeftEvent;
   [ServerToClientSocketEvents.ERROR]: ErrorEvent;
   [ServerToClientSocketEvents.BANNED]: BannedEvent;
   [ServerToClientSocketEvents.RESET_GAME]: ResetGameEvent;

@@ -3,6 +3,7 @@ import {
   getGameParticipantsBySocketId,
   updateGameParticipant,
 } from "../lib/prisma/queries/game-participants";
+import { MatchmakingQueue } from "../lib/matchmaking-queue";
 import { ServerToClientSocketEvents } from "../types/enums";
 import { GameParticipantStatus, GameEndReason } from "@prisma/client";
 
@@ -12,6 +13,10 @@ export const disconnectTimeouts: Map<string, NodeJS.Timeout> = new Map();
 export class DisconnectParticipantHandler extends SocketHandler {
   async handle(): Promise<void> {
     console.log(`[DISCONNECT] Disconnecting participant: ${this.socket.id}`);
+
+    // Remove from matchmaking queue if present
+    const matchmakingQueue = MatchmakingQueue.getInstance();
+    matchmakingQueue.removeFromQueueBySocketId(this.socket.id);
 
     // get all game participants by socket id
     const gameParticipants = await getGameParticipantsBySocketId(

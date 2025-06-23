@@ -3,6 +3,8 @@ export * from "./disconnect-participant";
 export * from "./end-game";
 export * from "./game-chat-messages";
 export * from "./join-game";
+export * from "./join-matchmaking-queue";
+export * from "./leave-matchmaking-queue";
 export * from "./move-piece";
 export * from "./participant-ready";
 export * from "./payment-confirmed";
