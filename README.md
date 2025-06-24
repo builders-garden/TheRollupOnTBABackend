@@ -1,4 +1,4 @@
-# Checkmates Service 
+# Checkmates Service
 
 A Node.js TypeScript service implementing Express API and websocket server.
 
