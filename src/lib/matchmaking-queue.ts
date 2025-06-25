@@ -277,9 +277,10 @@ export class MatchmakingQueue {
     const player1Wage = parseFloat(player1.wageAmount);
     const player2Wage = parseFloat(player2.wageAmount);
     const finalWageAmount = Math.min(player1Wage, player2Wage).toString();
+    const isZeroBet = parseFloat(finalWageAmount) === 0;
 
     console.log(
-      `[MATCHMAKING] Player1 bet: $${player1.wageAmount}, Player2 bet: $${player2.wageAmount}, Final bet: $${finalWageAmount}`
+      `[MATCHMAKING] Player1 bet: $${player1.wageAmount}, Player2 bet: $${player2.wageAmount}, Final bet: $${finalWageAmount}, Zero bet: ${isZeroBet}`
     );
 
     // Randomly assign colors
@@ -290,7 +291,8 @@ export class MatchmakingQueue {
     const gameId = ulid();
 
     // Create the game directly with Prisma
-    // For matchmaking games, we need payment flow - start in WAITING state
+    // For zero-bet games, start in ACTIVE state since no payment is needed
+    // For betting games, start in WAITING state until both players pay
     const newGame = await prisma.game.create({
       data: {
         id: gameId,
@@ -299,15 +301,19 @@ export class MatchmakingQueue {
         gameOption: player1.gameOption,
         wageAmount: finalWageAmount, // Use the minimum bet amount
         isWhite: isWhite,
-        gameState: GameState.WAITING, // Wait for both players to pay
+        gameState: isZeroBet ? GameState.ACTIVE : GameState.WAITING, // Active immediately for zero-bet games
         currentFen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-        // Don't set startedAt until the game is actually active
+        startedAt: isZeroBet ? new Date() : undefined, // Set start time for zero-bet games
+        // Don't set startedAt until the game is actually active for betting games
         creator: {
           create: {
             gameId: gameId,
             userId: user1.id,
             status: GameParticipantStatus.JOINED,
-            paid: false, // Creator needs to pay via smart contract
+            paid: isZeroBet, // Already "paid" for zero-bet games
+            paidTxHash: isZeroBet
+              ? "0x0000000000000000000000000000000000000000000000000000000000000000"
+              : undefined,
             timeLeft: duration,
           },
         },
@@ -316,7 +322,10 @@ export class MatchmakingQueue {
             gameId: gameId,
             userId: user2.id,
             status: GameParticipantStatus.JOINED,
-            paid: false, // Opponent needs to pay via smart contract
+            paid: isZeroBet, // Already "paid" for zero-bet games
+            paidTxHash: isZeroBet
+              ? "0x0000000000000000000000000000000000000000000000000000000000000000"
+              : undefined,
             timeLeft: duration,
           },
         },
@@ -326,33 +335,70 @@ export class MatchmakingQueue {
     // Notify both players that a match was found
     const io = getIOInstance();
     if (io) {
-      // Player1 is the creator (will create the smart contract game)
-      io.to(player1.socketId).emit(ServerToClientSocketEvents.MATCH_FOUND, {
-        gameId: newGame.id,
-        opponent: {
-          userId: player2.userId,
-          username: player2.username,
-          userFid: player2.userFid,
-          avatarUrl: user2.avatarUrl,
-        },
-        finalWageAmount,
-        playerRole: "creator", // Player1 creates the game
-        isMatchmaking: true,
-      });
+      if (isZeroBet) {
+        // For zero-bet games, notify both players that the game is ready to play
+        const gameReadyPayload = {
+          gameId: newGame.id,
+          opponent: {
+            userId: player2.userId,
+            username: player2.username,
+            userFid: player2.userFid,
+            avatarUrl: user2.avatarUrl,
+          },
+          finalWageAmount: "0",
+          isZeroBet: true,
+          gameState: GameState.ACTIVE,
+        };
 
-      // Player2 is the opponent (will join the smart contract game after creator creates it)
-      io.to(player2.socketId).emit(ServerToClientSocketEvents.MATCH_FOUND, {
-        gameId: newGame.id,
-        opponent: {
-          userId: player1.userId,
-          username: player1.username,
-          userFid: player1.userFid,
-          avatarUrl: user1.avatarUrl,
-        },
-        finalWageAmount,
-        playerRole: "opponent", // Player2 joins the game
-        isMatchmaking: true,
-      });
+        io.to(player1.socketId).emit(ServerToClientSocketEvents.MATCH_FOUND, {
+          ...gameReadyPayload,
+          opponent: {
+            userId: player2.userId,
+            username: player2.username,
+            userFid: player2.userFid,
+            avatarUrl: user2.avatarUrl,
+          },
+        });
+
+        io.to(player2.socketId).emit(ServerToClientSocketEvents.MATCH_FOUND, {
+          ...gameReadyPayload,
+          opponent: {
+            userId: player1.userId,
+            username: player1.username,
+            userFid: player1.userFid,
+            avatarUrl: user1.avatarUrl,
+          },
+        });
+      } else {
+        // For betting games, use the existing payment flow
+        // Player1 is the creator (will create the smart contract game)
+        io.to(player1.socketId).emit(ServerToClientSocketEvents.MATCH_FOUND, {
+          gameId: newGame.id,
+          opponent: {
+            userId: player2.userId,
+            username: player2.username,
+            userFid: player2.userFid,
+            avatarUrl: user2.avatarUrl,
+          },
+          finalWageAmount,
+          playerRole: "creator", // Player1 creates the game
+          isMatchmaking: true,
+        });
+
+        // Player2 is the opponent (will join the smart contract game after creator creates it)
+        io.to(player2.socketId).emit(ServerToClientSocketEvents.MATCH_FOUND, {
+          gameId: newGame.id,
+          opponent: {
+            userId: player1.userId,
+            username: player1.username,
+            userFid: player1.userFid,
+            avatarUrl: user1.avatarUrl,
+          },
+          finalWageAmount,
+          playerRole: "opponent", // Player2 joins the game
+          isMatchmaking: true,
+        });
+      }
     }
 
     return newGame.id;

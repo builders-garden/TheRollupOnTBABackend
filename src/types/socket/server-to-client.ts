@@ -191,6 +191,8 @@ export type MatchFoundEvent = {
   finalWageAmount: string; // The minimum bet amount agreed upon
   playerRole?: "creator" | "opponent"; // Role in the smart contract flow
   isMatchmaking?: boolean; // Whether this is a matchmaking game (vs friend game)
+  isZeroBet?: boolean; // Whether this is a zero-bet game (no payment required)
+  gameState?: string; // Game state for zero-bet games
 };
 
 // 17. Matchmaking: Queue joined
