@@ -192,7 +192,11 @@ model Game {
   gameState     GameState      @default(CREATED)
   gameResult    GameResult?
   gameEndReason GameEndReason?
-  gameEndTxHash String? // tx hash of the game end
+
+  // Transaction hashes for smart contract interactions
+  gameStartTxHash String? // tx hash of the createGame transaction (friend games)
+  joinGameTxHash  String? // tx hash of the joinGame transaction (opponent joining)
+  gameEndTxHash   String? // tx hash of the setGameResult transaction (game finalization)
 
   currentFen String @default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 
