@@ -1,4 +1,9 @@
-import type { GameEndReason, GameChatContentType } from "@prisma/client";
+import type {
+  GameEndReason,
+  GameChatContentType,
+  GameMode,
+  GameOption,
+} from "@prisma/client";
 import type { Color, Square } from "chess.js";
 import { ClientToServerSocketEvents } from "../enums";
 import type { Payment } from "..";
@@ -80,6 +85,20 @@ export type ResetGameRequestEvent = {
   userId: string;
 };
 
+// matchmaking events
+export type JoinMatchmakingQueueEvent = {
+  userId: string;
+  userFid: number;
+  username: string;
+  gameMode: GameMode;
+  gameOption: GameOption;
+  wageAmount: string; // Bet amount in USDC (as string to match Prisma decimal)
+};
+
+export type LeaveMatchmakingQueueEvent = {
+  userId: string;
+};
+
 export type ClientToServerEvents = {
   [ClientToServerSocketEvents.JOIN_GAME_REQUEST]: JoinGameRequestEvent;
   [ClientToServerSocketEvents.PAYMENT_CONFIRMED]: PaymentConfirmedEvent;
@@ -90,4 +109,6 @@ export type ClientToServerEvents = {
   [ClientToServerSocketEvents.END_GAME_REQUEST]: EndGameRequestEvent;
   [ClientToServerSocketEvents.ACCEPT_GAME_END_RESPONSE]: AcceptGameEndResponseEvent;
   [ClientToServerSocketEvents.RESET_GAME_REQUEST]: ResetGameRequestEvent;
+  [ClientToServerSocketEvents.JOIN_MATCHMAKING_QUEUE]: JoinMatchmakingQueueEvent;
+  [ClientToServerSocketEvents.LEAVE_MATCHMAKING_QUEUE]: LeaveMatchmakingQueueEvent;
 };

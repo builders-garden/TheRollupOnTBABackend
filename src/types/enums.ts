@@ -10,6 +10,9 @@ export enum ClientToServerSocketEvents {
   MESSAGE_SENT = "message_sent", // 9. message sent (text, image or tip)
   SPECTATOR_JOIN = "spectator_join", // 10. spectator join
   RESET_GAME_REQUEST = "reset_game_request", // 11. reset game request (dev only)
+  // matchmaking
+  JOIN_MATCHMAKING_QUEUE = "join_matchmaking_queue", // 12. join matchmaking queue
+  LEAVE_MATCHMAKING_QUEUE = "leave_matchmaking_queue", // 13. leave matchmaking queue
 }
 
 // server to client
@@ -32,8 +35,13 @@ export enum ServerToClientSocketEvents {
   // timer events
   TIMER_UPDATE = "timer_update", // 13. timer update (1-second intervals)
   TIMER_EXPIRED = "timer_expired", // 14. timer expired (timeout)
+  // matchmaking
+  QUEUE_STATUS_UPDATE = "queue_status_update", // 15. queue status update
+  MATCH_FOUND = "match_found", // 16. match found
+  QUEUE_JOINED = "queue_joined", // 17. successfully joined queue
+  QUEUE_LEFT = "queue_left", // 18. successfully left queue
   // other
-  ERROR = "error", // 15. error
-  BANNED = "banned", // 16. user found cheating ==> banned
-  RESET_GAME = "reset_game", // 17. reset game (dev only)
+  ERROR = "error", // 19. error
+  BANNED = "banned", // 20. user found cheating ==> banned
+  RESET_GAME = "reset_game", // 21. reset game (dev only)
 }

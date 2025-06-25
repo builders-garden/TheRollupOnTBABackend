@@ -22,6 +22,8 @@ import {
   EndGameHandler,
   GameChatMessagesHandler,
   JoinGameHandler,
+  JoinMatchmakingQueueHandler,
+  LeaveMatchmakingQueueHandler,
   MovePieceHandler,
   ParticipantReadyHandler,
   PaymentConfirmedHandler,
@@ -34,6 +36,8 @@ import type {
   ParticipantReadyEvent,
   AcceptGameEndResponseEvent,
   PaymentConfirmedEvent,
+  JoinMatchmakingQueueEvent,
+  LeaveMatchmakingQueueEvent,
 } from "./types";
 import { baseOrigins, localOrigins } from "./lib/cors";
 import {
@@ -181,6 +185,26 @@ io.on("connection", (socket) => {
       await handler.handle(data);
     }
   );
+
+  // Matchmaking events
+  socket.on(
+    ClientToServerSocketEvents.JOIN_MATCHMAKING_QUEUE,
+    async (data: JoinMatchmakingQueueEvent) => {
+      console.log("join matchmaking queue:", data);
+      const handler = new JoinMatchmakingQueueHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
+
+  socket.on(
+    ClientToServerSocketEvents.LEAVE_MATCHMAKING_QUEUE,
+    async (data: LeaveMatchmakingQueueEvent) => {
+      console.log("leave matchmaking queue:", data);
+      const handler = new LeaveMatchmakingQueueHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
+
   // disconnect
   socket.on("disconnect", async () => {
     console.log("user disconnected:", socket.id);

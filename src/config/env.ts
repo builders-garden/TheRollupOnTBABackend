@@ -28,6 +28,9 @@ const envSchema = z.object({
 
   // Daimo Pay
   DAIMO_PAY_API_KEY: z.string().min(1),
+
+  // Smart Contract
+  BACKEND_PRIVATE_KEY: z.string().min(1),
 });
 
 export type Env = z.infer<typeof envSchema>;
