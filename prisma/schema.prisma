@@ -295,14 +295,16 @@ model GameChatMessage {
 model UserStatistics {
   id                       String   @id @default(ulid())
   userId                   String   @unique
-  // ratings
-  eloRating                Int      @default(100) // ELO rating
-  glicko1Rating            Int      @default(100) // Glicko1 rating
-  glicko2Rating            Int      @default(100) // Glicko2 rating
-  glicko2Deviation         Int      @default(100) // Glicko2 deviation
-  glicko2Volatility        Float    @default(0.06) // Glicko2 volatility
-  glicko2RatingDeviation   Float    @default(350) // Glicko2 rating deviation
-  glicko2RatingVolatility  Float    @default(0.06) // Glicko2 rating volatility
+  // ELO fields
+  eloRating                Float    @default(1000) // ELO rating
+  // Glicko-1 fields
+  glicko1Rating            Float    @default(1500) // Glicko1 rating
+  glicko1Deviation         Float    @default(350) // Glicko1 deviation
+  // Glicko-2 fields
+  glicko2Rating            Float    @default(1500) // glicko_mu μ: The player's rating (centered at 1500 for humans, can be float)
+  glicko2Deviation         Float    @default(350) // glicko_phi φ: The rating deviation (uncertainty in the rating, lower = more certain)	
+  glicko2Volatility        Float    @default(0.06) // glicko_sigma σ: The rating volatility (how much the rating can change, float)
+  glicko2LastUpdate        DateTime @default(now()) // glicko_ltime: The last time the rating was updated (used for rating decay/aging)
   // connected chess accounts (chess.com, lichess, etc.)
   chessComConnected        Boolean  @default(false)
   lichessConnected         Boolean  @default(false)
