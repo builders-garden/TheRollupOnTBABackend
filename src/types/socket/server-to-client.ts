@@ -189,6 +189,8 @@ export type MatchFoundEvent = {
     avatarUrl: string | null; // Profile picture URL
   };
   finalWageAmount: string; // The minimum bet amount agreed upon
+  playerRole?: "creator" | "opponent"; // Role in the smart contract flow
+  isMatchmaking?: boolean; // Whether this is a matchmaking game (vs friend game)
 };
 
 // 17. Matchmaking: Queue joined

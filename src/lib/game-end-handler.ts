@@ -6,6 +6,7 @@ import type { Server } from "socket.io";
 import { ServerToClientSocketEvents } from "../types/enums";
 import { sendFrameNotification } from "./notifications";
 import { getGameEndReason } from "./utils";
+import { BackendSmartContractService } from "./smart-contract-service";
 
 /**
  * Central handler for all game ending scenarios
@@ -17,13 +18,14 @@ export async function handleGameEnd(
   userId: string,
   reason: GameEndReason
 ): Promise<void> {
+  const chessTimerManager = ChessTimerManager.getInstance();
+
   try {
     console.log(
       `[GAME END] Processing game end for ${gameId}. Reason: ${reason}`
     );
 
     // 1. Get current timer state before stopping
-    const chessTimerManager = ChessTimerManager.getInstance();
     const timer = chessTimerManager.getTimer(gameId);
 
     // 2. Stop the server timer immediately
@@ -87,6 +89,52 @@ export async function handleGameEnd(
       endedAt: new Date(),
     });
 
+    // 5. Finalize game on smart contract (if contract ID exists)
+    if (game.contractId) {
+      try {
+        console.log(
+          `[CONTRACT] Finalizing game ${gameId} with contract ID ${game.contractId}`
+        );
+
+        // Set game result on smart contract with the new signature
+        const contractResult = await BackendSmartContractService.setGameResult(
+          game.contractId,
+          {
+            creator: creatorParticipant,
+            opponent: opponentParticipant,
+            isWhite: game.isWhite,
+          },
+          gameResult
+        );
+
+        if (contractResult.success) {
+          console.log(
+            `[CONTRACT] Game ${gameId} finalized on contract. Result: ${gameResult}. TX: ${contractResult.txHash}`
+          );
+
+          // Update game with contract transaction hash
+          await updateGame(gameId, {
+            gameEndTxHash: contractResult.txHash,
+          });
+        } else {
+          console.error(
+            `[CONTRACT] Failed to finalize game ${gameId} on contract: ${contractResult.error}`
+          );
+          // Game continues to end normally even if contract call fails
+        }
+      } catch (error) {
+        console.error(
+          `[CONTRACT] Error finalizing game ${gameId} on contract:`,
+          error
+        );
+        // Continue with normal game ending flow even if contract interaction fails
+      }
+    } else {
+      console.log(
+        `[GAME END] Game ${gameId} has no contract ID - skipping contract finalization`
+      );
+    }
+
     // Note: Winner determination is now handled at the game level via gameResult
     // Individual participant winner tracking has been removed from the schema
 
@@ -107,7 +155,7 @@ export async function handleGameEnd(
       reason,
     });
 
-    // 6. Send notification to all participants
+    // 9. Send notification to all participants
     for (const participant of [creatorParticipant, opponentParticipant]) {
       if (participant.user) {
         await sendFrameNotification({
@@ -134,7 +182,6 @@ export async function handleGameEnd(
     });
 
     // Still try to cleanup timer on error
-    const chessTimerManager = ChessTimerManager.getInstance();
     chessTimerManager.stopTimer(gameId);
     chessTimerManager.deleteTimer(gameId);
   }

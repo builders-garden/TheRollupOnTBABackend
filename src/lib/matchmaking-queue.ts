@@ -290,6 +290,7 @@ export class MatchmakingQueue {
     const gameId = ulid();
 
     // Create the game directly with Prisma
+    // For matchmaking games, we need payment flow - start in WAITING state
     const newGame = await prisma.game.create({
       data: {
         id: gameId,
@@ -298,15 +299,15 @@ export class MatchmakingQueue {
         gameOption: player1.gameOption,
         wageAmount: finalWageAmount, // Use the minimum bet amount
         isWhite: isWhite,
-        gameState: GameState.ACTIVE, // Start immediately for matchmaking games
+        gameState: GameState.WAITING, // Wait for both players to pay
         currentFen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-        startedAt: new Date(), // Set start time for active games
+        // Don't set startedAt until the game is actually active
         creator: {
           create: {
             gameId: gameId,
             userId: user1.id,
             status: GameParticipantStatus.JOINED,
-            paid: true, // Assume paid for now (could add payment validation later)
+            paid: false, // Creator needs to pay via smart contract
             timeLeft: duration,
           },
         },
@@ -314,8 +315,8 @@ export class MatchmakingQueue {
           create: {
             gameId: gameId,
             userId: user2.id,
-            status: GameParticipantStatus.JOINED, // Both players auto-join in matchmaking
-            paid: true, // Assume paid for now (could add payment validation later)
+            status: GameParticipantStatus.JOINED,
+            paid: false, // Opponent needs to pay via smart contract
             timeLeft: duration,
           },
         },
@@ -325,6 +326,7 @@ export class MatchmakingQueue {
     // Notify both players that a match was found
     const io = getIOInstance();
     if (io) {
+      // Player1 is the creator (will create the smart contract game)
       io.to(player1.socketId).emit(ServerToClientSocketEvents.MATCH_FOUND, {
         gameId: newGame.id,
         opponent: {
@@ -334,8 +336,11 @@ export class MatchmakingQueue {
           avatarUrl: user2.avatarUrl,
         },
         finalWageAmount,
+        playerRole: "creator", // Player1 creates the game
+        isMatchmaking: true,
       });
 
+      // Player2 is the opponent (will join the smart contract game after creator creates it)
       io.to(player2.socketId).emit(ServerToClientSocketEvents.MATCH_FOUND, {
         gameId: newGame.id,
         opponent: {
@@ -345,6 +350,8 @@ export class MatchmakingQueue {
           avatarUrl: user1.avatarUrl,
         },
         finalWageAmount,
+        playerRole: "opponent", // Player2 joins the game
+        isMatchmaking: true,
       });
     }
 
