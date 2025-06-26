@@ -62,14 +62,27 @@ export class Glicko2BatchUpdater {
 
       // Process each user
       const updatedRatings = new Map<string, PlayerRating>();
-
-      for (const user of allUsers) {
-        const updatedRating = await this.processUserRating(
-          user.id,
+      const BATCH_SIZE = 100;
+      for (let offset = 0; offset < allUsers.length; offset += BATCH_SIZE) {
+        console.log(
+          `[GLICKO2 BATCH] Processing batch ${
+            offset / BATCH_SIZE + 1
+          } of ${Math.ceil(allUsers.length / BATCH_SIZE)}`
+        );
+        const userBatch = allUsers.slice(offset, offset + BATCH_SIZE);
+        const batchUpdatedRatings = await this.processBatch(
+          userBatch,
           periodStart,
           periodEnd
         );
-        updatedRatings.set(user.id, updatedRating);
+        console.log(
+          `[GLICKO2 BATCH] Batch ${offset / BATCH_SIZE + 1} of ${Math.ceil(
+            allUsers.length / BATCH_SIZE
+          )} processed`
+        );
+        for (const [userId, rating] of batchUpdatedRatings) {
+          updatedRatings.set(userId, rating);
+        }
       }
 
       // Save all updated ratings to database
@@ -82,6 +95,30 @@ export class Glicko2BatchUpdater {
       console.error("[GLICKO2 BATCH] Error during batch update:", error);
       throw error;
     }
+  }
+
+  /**
+   * Process a batch of users
+   */
+  private async processBatch(
+    users: {
+      id: string;
+      fid: number;
+      username: string;
+    }[],
+    periodStart: Date,
+    periodEnd: Date
+  ): Promise<Map<string, PlayerRating>> {
+    const updatedRatings = new Map<string, PlayerRating>();
+    for (const user of users) {
+      const updatedRating = await this.processUserRating(
+        user.id,
+        periodStart,
+        periodEnd
+      );
+      updatedRatings.set(user.id, updatedRating);
+    }
+    return updatedRatings;
   }
 
   /**
