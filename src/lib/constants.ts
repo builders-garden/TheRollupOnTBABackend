@@ -62,3 +62,23 @@ export const GAME_OPTIONS: Record<
     },
   },
 };
+
+/**
+ * Glicko-2 constants
+ * https://www.glicko.net/glicko/glicko2.pdf
+ */
+export const GLICKO2 = {
+  MU: 1500,
+  PHI: 350,
+  SIGMA: 0.06,
+  TAU: 0.75,
+  EPSILON: 0.000001,
+  MIN_MU: 600,
+  MIN_PHI: 30,
+  MAX_SIGMA: 0.1,
+  PROVISIONAL_PHI: 110,
+  // Glicko-2 result values
+  WIN: 1.0,
+  DRAW: 0.5,
+  LOSS: 0.0,
+};

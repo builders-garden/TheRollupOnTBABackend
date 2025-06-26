@@ -13,6 +13,7 @@ import { CHECKMATES_ABI } from "./abi";
 /**
  * Backend smart contract service for game finalization
  */
+// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class BackendSmartContractService {
   /**
    * Finalize game on smart contract by setting the winner
@@ -29,6 +30,7 @@ export class BackendSmartContractService {
   ): Promise<{ success: boolean; txHash?: string; error?: string }> {
     try {
       // Determine the player winner number (0 = draw, 1 = player1, 2 = player2)
+      // biome-ignore lint/complexity/noThisInStatic: <explanation>
       const playerWinner = this.getPlayerWinnerNumber(game, gameResult);
 
       console.log(
@@ -75,9 +77,8 @@ export class BackendSmartContractService {
           `[CONTRACT] Game ${contractGameId} finalized successfully. PlayerWinner: ${playerWinner} (${gameResult}). TX: ${tx}`
         );
         return { success: true, txHash: tx };
-      } else {
-        throw new Error("Transaction failed");
       }
+      throw new Error("Transaction failed");
     } catch (error) {
       console.error(
         `[CONTRACT] Error setting game result for ${contractGameId}:`,

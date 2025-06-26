@@ -1,6 +1,6 @@
 import {
-  GameMode,
-  GameOption,
+  type GameMode,
+  type GameOption,
   GameType,
   GameParticipantStatus,
   GameIsWhite,
@@ -53,7 +53,13 @@ export class MatchmakingQueue {
       this.queue.set(queueKey, []);
     }
 
-    const queueForGameMode = this.queue.get(queueKey)!;
+    const queueForGameMode = this.queue.get(queueKey);
+    if (!queueForGameMode) {
+      console.error(
+        `[MATCHMAKING] No queue found for ${queueKey}. This should never happen.`
+      );
+      return;
+    }
 
     // Check if player is already in queue
     const existingPlayerIndex = queueForGameMode.findIndex(
@@ -188,8 +194,15 @@ export class MatchmakingQueue {
     }
 
     // Take the first two players (FIFO)
-    const player1 = queueForGameMode.shift()!;
-    const player2 = queueForGameMode.shift()!;
+    const player1 = queueForGameMode.shift();
+    const player2 = queueForGameMode.shift();
+
+    if (!player1 || !player2) {
+      console.error(
+        `[MATCHMAKING] No players found in queue for ${queueKey}. This should never happen.`
+      );
+      return;
+    }
 
     console.log(
       `[MATCHMAKING] Matching players ${player1.username} vs ${player2.username}`
@@ -210,7 +223,7 @@ export class MatchmakingQueue {
       // Update queue status for remaining players
       this.emitQueueStatusToAll(queueKey);
     } catch (error) {
-      console.error(`[MATCHMAKING] Error creating matched game:`, error);
+      console.error("[MATCHMAKING] Error creating matched game:", error);
 
       // Re-add players to queue if game creation failed
       queueForGameMode.unshift(player2, player1);
@@ -274,10 +287,10 @@ export class MatchmakingQueue {
     );
 
     // Calculate minimum wage amount between the two players
-    const player1Wage = parseFloat(player1.wageAmount);
-    const player2Wage = parseFloat(player2.wageAmount);
+    const player1Wage = Number.parseFloat(player1.wageAmount);
+    const player2Wage = Number.parseFloat(player2.wageAmount);
     const finalWageAmount = Math.min(player1Wage, player2Wage).toString();
-    const isZeroBet = parseFloat(finalWageAmount) === 0;
+    const isZeroBet = Number.parseFloat(finalWageAmount) === 0;
 
     console.log(
       `[MATCHMAKING] Player1 bet: $${player1.wageAmount}, Player2 bet: $${player2.wageAmount}, Final bet: $${finalWageAmount}, Zero bet: ${isZeroBet}`
@@ -429,9 +442,9 @@ export class MatchmakingQueue {
     const queueForGameMode = this.queue.get(queueKey);
     if (!queueForGameMode) return;
 
-    queueForGameMode.forEach((player) => {
+    for (const player of queueForGameMode) {
       this.emitQueueStatus(player);
-    });
+    }
   }
 
   /**

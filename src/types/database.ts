@@ -17,5 +17,5 @@ export type GameParticipant = DbGameParticipant & {
 
 export type Game = DbGame & {
   creator: GameParticipant;
-  opponent?: GameParticipant;
+  opponent?: GameParticipant | null;
 };
