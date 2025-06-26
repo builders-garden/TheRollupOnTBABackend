@@ -253,3 +253,25 @@ export function getPreviousRatingPeriod(): { start: Date; end: Date } {
 
   return { start, end };
 }
+
+/**
+ * Bulk update multiple users' statistics using Prisma transaction
+ * More efficient than separate queries and maintains type safety
+ */
+export const bulkUpdateUserStatistics = async (
+  updates: Array<{
+    userId: string;
+    data: Prisma.UserStatisticsUpdateInput;
+  }>
+) => {
+  if (updates.length === 0) return;
+
+  return prisma.$transaction(
+    updates.map((update) =>
+      prisma.userStatistics.update({
+        where: { userId: update.userId },
+        data: update.data,
+      })
+    )
+  );
+};

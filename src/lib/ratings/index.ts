@@ -1,7 +1,7 @@
 import { GameResult } from "@prisma/client";
 import { calculateEloRating } from "./elo";
 import type { GameParticipant } from "../../types/database";
-import { updateUserStatistics } from "../prisma/queries/user-statistics";
+import { bulkUpdateUserStatistics } from "../prisma/queries/user-statistics";
 
 export const updateRatings = async ({
   gameId,
@@ -36,13 +36,15 @@ export const updateRatings = async ({
   });
 
   // update user statistics
-  await Promise.all([
-    updateUserStatistics(whiteUser.user.id, {
-      eloRating: newWhiteEloRating,
-    }),
-    updateUserStatistics(blackUser.user.id, {
-      eloRating: newBlackEloRating,
-    }),
+  await bulkUpdateUserStatistics([
+    {
+      userId: whiteUser.user.id,
+      data: { eloRating: newWhiteEloRating },
+    },
+    {
+      userId: blackUser.user.id,
+      data: { eloRating: newBlackEloRating },
+    },
   ]);
 
   console.log(
