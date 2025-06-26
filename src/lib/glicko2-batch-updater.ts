@@ -26,12 +26,38 @@ interface GameMatch {
   opponentRating: PlayerRating;
 }
 
+interface ProcessingResult {
+  successful: PlayerRating[];
+  failed: FailedUserProcessing[];
+  totalProcessed: number;
+}
+
+interface FailedUserProcessing {
+  userId: string;
+  username?: string;
+  error: string;
+  retryCount: number;
+  isRetryable: boolean;
+}
+
+interface BatchProcessingStats {
+  totalUsers: number;
+  successfullyProcessed: number;
+  failedProcessing: number;
+  successfullySaved: number;
+  failedSaving: number;
+  skippedRetries: number;
+}
+
 /**
  * Batch update Glicko-2 ratings for all players according to official recommendations
  * This should be run at the end of each rating period (weekly)
  */
 export class Glicko2BatchUpdater {
   private glicko2: Glicko2;
+  private readonly MAX_RETRIES = 3;
+  private readonly RETRY_DELAY_MS = 1000;
+  private readonly MAX_FAILURE_RATE = 0.1; // Stop processing if more than 10% of users fail
 
   constructor() {
     // Initialize Glicko-2 calculator with recommended settings
@@ -46,7 +72,7 @@ export class Glicko2BatchUpdater {
   /**
    * Process the previous rating period and update all player ratings
    */
-  async updateRatingsForPreviousPeriod(): Promise<void> {
+  async updateRatingsForPreviousPeriod(): Promise<BatchProcessingStats> {
     console.log("[GLICKO2 BATCH] Starting weekly rating update...");
 
     const { start: periodStart, end: periodEnd } = getPreviousRatingPeriod();
@@ -55,70 +81,414 @@ export class Glicko2BatchUpdater {
       `[GLICKO2 BATCH] Processing period: ${periodStart.toISOString()} to ${periodEnd.toISOString()}`
     );
 
+    const stats: BatchProcessingStats = {
+      totalUsers: 0,
+      successfullyProcessed: 0,
+      failedProcessing: 0,
+      successfullySaved: 0,
+      failedSaving: 0,
+      skippedRetries: 0,
+    };
+
     try {
       // Get all users (including inactive ones for rating decay)
       const allUsers = await getAllUsers();
+      stats.totalUsers = allUsers.length;
       console.log(`[GLICKO2 BATCH] Processing ${allUsers.length} users`);
 
-      // Process each user
-      const updatedRatings = new Map<string, PlayerRating>();
-      const BATCH_SIZE = 100;
-      for (let offset = 0; offset < allUsers.length; offset += BATCH_SIZE) {
-        console.log(
-          `[GLICKO2 BATCH] Processing batch ${
-            offset / BATCH_SIZE + 1
-          } of ${Math.ceil(allUsers.length / BATCH_SIZE)}`
+      if (allUsers.length === 0) {
+        console.log("[GLICKO2 BATCH] No users to process");
+        return stats;
+      }
+
+      // Process users in batches with error handling
+      const processingResult = await this.processAllUsersBatches(
+        allUsers,
+        periodStart,
+        periodEnd,
+        stats
+      );
+
+      // Check if we should continue with saving based on failure rate
+      const failureRate = processingResult.failed.length / allUsers.length;
+      if (failureRate > this.MAX_FAILURE_RATE) {
+        throw new Error(
+          `High failure rate detected: ${(failureRate * 100).toFixed(1)}% (${
+            processingResult.failed.length
+          }/${allUsers.length}). Aborting batch update.`
         );
-        const userBatch = allUsers.slice(offset, offset + BATCH_SIZE);
-        const batchUpdatedRatings = await this.processBatch(
-          userBatch,
+      }
+
+      // Save successfully processed ratings
+      if (processingResult.successful.length > 0) {
+        const saveResult = await this.saveUpdatedRatingsWithErrorHandling(
+          processingResult.successful,
           periodStart,
           periodEnd
         );
-        console.log(
-          `[GLICKO2 BATCH] Batch ${offset / BATCH_SIZE + 1} of ${Math.ceil(
-            allUsers.length / BATCH_SIZE
-          )} processed`
-        );
-        for (const [userId, rating] of batchUpdatedRatings) {
-          updatedRatings.set(userId, rating);
-        }
+        stats.successfullySaved = saveResult.successful;
+        stats.failedSaving = saveResult.failed;
       }
 
-      // Save all updated ratings to database
-      await this.saveUpdatedRatings(updatedRatings, periodStart, periodEnd);
+      // Log final statistics
+      this.logFinalStatistics(stats, processingResult);
 
       console.log(
-        `[GLICKO2 BATCH] Successfully updated ratings for ${updatedRatings.size} users`
+        `[GLICKO2 BATCH] Batch update completed. ${stats.successfullySaved} users updated successfully.`
       );
+
+      return stats;
     } catch (error) {
-      console.error("[GLICKO2 BATCH] Error during batch update:", error);
+      console.error(
+        "[GLICKO2 BATCH] Critical error during batch update:",
+        error
+      );
       throw error;
     }
   }
 
   /**
-   * Process a batch of users
+   * Process all users in batches with comprehensive error handling
    */
-  private async processBatch(
-    users: {
-      id: string;
-      fid: number;
-      username: string;
-    }[],
+  private async processAllUsersBatches(
+    allUsers: { id: string; fid: number; username: string }[],
+    periodStart: Date,
+    periodEnd: Date,
+    stats: BatchProcessingStats
+  ): Promise<ProcessingResult> {
+    const result: ProcessingResult = {
+      successful: [],
+      failed: [],
+      totalProcessed: 0,
+    };
+
+    const BATCH_SIZE = 100;
+    for (let offset = 0; offset < allUsers.length; offset += BATCH_SIZE) {
+      const batchNumber = Math.floor(offset / BATCH_SIZE) + 1;
+      const totalBatches = Math.ceil(allUsers.length / BATCH_SIZE);
+
+      console.log(
+        `[GLICKO2 BATCH] Processing batch ${batchNumber} of ${totalBatches}`
+      );
+
+      const userBatch = allUsers.slice(offset, offset + BATCH_SIZE);
+
+      try {
+        const batchResult = await this.processBatchWithErrorHandling(
+          userBatch,
+          periodStart,
+          periodEnd
+        );
+
+        // Accumulate results
+        result.successful.push(...batchResult.successful);
+        result.failed.push(...batchResult.failed);
+        result.totalProcessed += batchResult.totalProcessed;
+
+        // Update stats
+        stats.successfullyProcessed += batchResult.successful.length;
+        stats.failedProcessing += batchResult.failed.length;
+
+        console.log(
+          `[GLICKO2 BATCH] Batch ${batchNumber} completed: ${batchResult.successful.length} successful, ${batchResult.failed.length} failed`
+        );
+
+        // Check if we should stop due to high failure rate in this batch
+        const batchFailureRate = batchResult.failed.length / userBatch.length;
+        if (batchFailureRate > this.MAX_FAILURE_RATE * 2) {
+          // Double the threshold for individual batches
+          console.warn(
+            `[GLICKO2 BATCH] High failure rate in batch ${batchNumber}: ${(
+              batchFailureRate * 100
+            ).toFixed(1)}%`
+          );
+        }
+      } catch (error) {
+        console.error(
+          `[GLICKO2 BATCH] Critical error in batch ${batchNumber}:`,
+          error
+        );
+        // Mark entire batch as failed
+        const batchFailures = userBatch.map((user) => ({
+          userId: user.id,
+          username: user.username,
+          error: `Batch processing error: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+          retryCount: 0,
+          isRetryable: false,
+        }));
+        result.failed.push(...batchFailures);
+        stats.failedProcessing += batchFailures.length;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Process a batch of users with individual error handling
+   */
+  private async processBatchWithErrorHandling(
+    users: { id: string; fid: number; username: string }[],
     periodStart: Date,
     periodEnd: Date
-  ): Promise<Map<string, PlayerRating>> {
-    const updatedRatings = new Map<string, PlayerRating>();
-    for (const user of users) {
-      const updatedRating = await this.processUserRating(
-        user.id,
-        periodStart,
-        periodEnd
-      );
-      updatedRatings.set(user.id, updatedRating);
+  ): Promise<ProcessingResult> {
+    const result = {
+      successful: [],
+      failed: [],
+      totalProcessed: users.length,
+    } as ProcessingResult;
+
+    // Process users in parallel within the batch, with individual error handling
+    const userPromises = users.map(async (user) => {
+      try {
+        const updatedRating = await this.processUserRatingWithRetry(
+          user,
+          periodStart,
+          periodEnd
+        );
+        return { success: true, rating: updatedRating, user };
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        console.error(
+          `[GLICKO2 BATCH] Failed to process user ${user.username} (${user.id}):`,
+          errorMessage
+        );
+
+        return {
+          success: false,
+          error: {
+            userId: user.id,
+            username: user.username,
+            error: errorMessage,
+            retryCount: this.MAX_RETRIES,
+            isRetryable: this.isRetryableError(error),
+          },
+          user,
+        };
+      }
+    });
+
+    const results = await Promise.allSettled(userPromises);
+
+    for (const promiseResult of results) {
+      if (promiseResult.status === "fulfilled") {
+        const userResult = promiseResult.value;
+        if (userResult.success && userResult.rating) {
+          result.successful.push(userResult.rating);
+        } else {
+          if (userResult.error) {
+            result.failed.push(userResult.error);
+          }
+        }
+      } else {
+        // This shouldn't happen since we're catching errors above, but just in case
+        result.failed.push({
+          userId: "unknown",
+          username: "unknown",
+          error: `Promise rejected: ${promiseResult.reason}`,
+          retryCount: 0,
+          isRetryable: false,
+        });
+      }
     }
-    return updatedRatings;
+
+    return result;
+  }
+
+  /**
+   * Process a single user's rating with retry mechanism
+   */
+  private async processUserRatingWithRetry(
+    user: { id: string; fid: number; username: string },
+    periodStart: Date,
+    periodEnd: Date,
+    attempt = 1
+  ): Promise<PlayerRating> {
+    try {
+      return await this.processUserRating(user.id, periodStart, periodEnd);
+    } catch (error) {
+      if (attempt < this.MAX_RETRIES && this.isRetryableError(error)) {
+        console.warn(
+          `[GLICKO2 BATCH] Retrying user ${user.username} (attempt ${
+            attempt + 1
+          }/${this.MAX_RETRIES})`
+        );
+
+        // Wait before retrying (exponential backoff)
+        await this.delay(this.RETRY_DELAY_MS * 2 ** (attempt - 1));
+
+        return this.processUserRatingWithRetry(
+          user,
+          periodStart,
+          periodEnd,
+          attempt + 1
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Determine if an error is retryable
+   */
+  private isRetryableError(error: unknown): boolean {
+    if (!error) return false;
+
+    const errorMessage =
+      error instanceof Error
+        ? error.message.toLowerCase()
+        : String(error).toLowerCase();
+
+    // Network/connection errors are retryable
+    const retryablePatterns = [
+      "timeout",
+      "connection",
+      "network",
+      "econnreset",
+      "enotfound",
+      "econnrefused",
+      "socket hang up",
+      "temporary",
+    ];
+
+    return retryablePatterns.some((pattern) => errorMessage.includes(pattern));
+  }
+
+  /**
+   * Save updated ratings with error handling using Promise.allSettled
+   */
+  private async saveUpdatedRatingsWithErrorHandling(
+    updatedRatings: PlayerRating[],
+    periodStart: Date,
+    periodEnd: Date
+  ): Promise<{ successful: number; failed: number }> {
+    console.log(
+      `[GLICKO2 BATCH] Saving ${updatedRatings.length} updated ratings...`
+    );
+
+    const savePromises = updatedRatings.map(async (rating) => {
+      try {
+        // Use a transaction-like approach for each user
+        await Promise.all([
+          upsertGlicko2RatingPeriod({
+            userId: rating.userId,
+            periodStart,
+            periodEnd,
+            rating: rating.rating,
+            deviation: rating.deviation,
+            volatility: rating.volatility,
+          }),
+          updateUserStatisticsGlicko2({
+            userId: rating.userId,
+            rating: rating.rating,
+            deviation: rating.deviation,
+            volatility: rating.volatility,
+          }),
+        ]);
+
+        return { success: true, userId: rating.userId };
+      } catch (error) {
+        console.error(
+          `[GLICKO2 BATCH] Failed to save rating for user ${rating.userId}:`,
+          error
+        );
+        return {
+          success: false,
+          userId: rating.userId,
+          error: error instanceof Error ? error.message : "Unknown save error",
+        };
+      }
+    });
+
+    const results = await Promise.allSettled(savePromises);
+
+    let successful = 0;
+    let failed = 0;
+
+    for (const result of results) {
+      if (result.status === "fulfilled") {
+        if (result.value.success) {
+          successful++;
+        } else {
+          failed++;
+        }
+      } else {
+        failed++;
+        console.error("[GLICKO2 BATCH] Save promise rejected:", result.reason);
+      }
+    }
+
+    console.log(
+      `[GLICKO2 BATCH] Save completed: ${successful} successful, ${failed} failed`
+    );
+    return { successful, failed };
+  }
+
+  /**
+   * Log comprehensive final statistics
+   */
+  private logFinalStatistics(
+    stats: BatchProcessingStats,
+    processingResult: ProcessingResult
+  ): void {
+    console.log("\n[GLICKO2 BATCH] ===== FINAL STATISTICS =====");
+    console.log(`Total users: ${stats.totalUsers}`);
+    console.log(`Successfully processed: ${stats.successfullyProcessed}`);
+    console.log(`Failed processing: ${stats.failedProcessing}`);
+    console.log(`Successfully saved: ${stats.successfullySaved}`);
+    console.log(`Failed saving: ${stats.failedSaving}`);
+
+    if (stats.totalUsers > 0) {
+      const successRate = (
+        (stats.successfullySaved / stats.totalUsers) *
+        100
+      ).toFixed(1);
+      console.log(`Overall success rate: ${successRate}%`);
+    }
+
+    // Log details about failures
+    if (processingResult.failed.length > 0) {
+      console.log(
+        `\n[GLICKO2 BATCH] Failed users (${processingResult.failed.length}):`
+      );
+
+      const retryableFailures = processingResult.failed.filter(
+        (f) => f.isRetryable
+      );
+      const nonRetryableFailures = processingResult.failed.filter(
+        (f) => !f.isRetryable
+      );
+
+      if (retryableFailures.length > 0) {
+        console.log(`  Retryable failures: ${retryableFailures.length}`);
+      }
+      if (nonRetryableFailures.length > 0) {
+        console.log(`  Non-retryable failures: ${nonRetryableFailures.length}`);
+      }
+
+      // Log first few failures for debugging
+      for (const failure of processingResult.failed.slice(0, 5)) {
+        console.log(
+          `    - ${failure.username || failure.userId}: ${failure.error}`
+        );
+      }
+
+      if (processingResult.failed.length > 5) {
+        console.log(`    ... and ${processingResult.failed.length - 5} more`);
+      }
+    }
+    console.log("[GLICKO2 BATCH] ===============================\n");
+  }
+
+  /**
+   * Utility function for delays
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -304,46 +674,6 @@ export class Glicko2BatchUpdater {
       default:
         return 0.5; // Treat unknown results as draws
     }
-  }
-
-  /**
-   * Save all updated ratings to database
-   */
-  private async saveUpdatedRatings(
-    updatedRatings: Map<string, PlayerRating>,
-    periodStart: Date,
-    periodEnd: Date
-  ): Promise<void> {
-    console.log(
-      `[GLICKO2 BATCH] Saving ${updatedRatings.size} updated ratings...`
-    );
-
-    const promises = [];
-
-    for (const [userId, rating] of updatedRatings) {
-      // Save to rating periods table
-      const periodPromise = upsertGlicko2RatingPeriod({
-        userId,
-        periodStart,
-        periodEnd,
-        rating: rating.rating,
-        deviation: rating.deviation,
-        volatility: rating.volatility,
-      });
-
-      // Update user statistics with latest values
-      const statsPromise = updateUserStatisticsGlicko2({
-        userId,
-        rating: rating.rating,
-        deviation: rating.deviation,
-        volatility: rating.volatility,
-      });
-
-      promises.push(periodPromise, statsPromise);
-    }
-
-    await Promise.all(promises);
-    console.log("[GLICKO2 BATCH] All ratings saved successfully");
   }
 
   /**
