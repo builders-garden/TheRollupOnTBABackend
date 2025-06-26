@@ -1,4 +1,4 @@
-import { GameState, GameEndReason } from "@prisma/client";
+import { GameState, GameEndReason, GameResult } from "@prisma/client";
 import { ChessTimerManager } from "./timer-manager";
 import { getGameById, updateGame } from "./prisma/queries";
 import { finalizeTimerValues } from "./prisma/queries/timer-persistence";
@@ -7,7 +7,7 @@ import { ServerToClientSocketEvents } from "../types/enums";
 import { sendFrameNotification } from "./notifications";
 import { getGameEndReason } from "./utils";
 import { BackendSmartContractService } from "./smart-contract-service";
-import { updateRatings } from "./ratings";
+import { updateRatings, calculateRatingChanges } from "./ratings";
 
 /**
  * Central handler for all game ending scenarios
@@ -90,6 +90,16 @@ export async function handleGameEnd(
       endedAt: new Date(),
     });
 
+    // Calculate rating changes before updating
+    const ratingChanges = await calculateRatingChanges({
+      whiteUser,
+      blackUser,
+      gameResult,
+    });
+
+    // Calculate payout information
+    const payoutInfo = await calculatePayoutInfo(game, gameResult);
+
     // update ratings
     await updateRatings({
       gameId,
@@ -162,6 +172,8 @@ export async function handleGameEnd(
       gameId,
       userId,
       reason,
+      ratingChanges,
+      payoutInfo,
     });
 
     // 9. Send notification to all participants
@@ -188,6 +200,7 @@ export async function handleGameEnd(
       gameId,
       userId,
       reason,
+      // Don't include rating/payout data on error case
     });
 
     // Still try to cleanup timer on error
@@ -230,5 +243,57 @@ export async function handleTimerExpiration(
       `[TIMEOUT] Error handling timeout for game ${gameId}:`,
       error
     );
+  }
+}
+
+/**
+ * Calculate payout information for a game
+ */
+async function calculatePayoutInfo(
+  game: any, // Use any type since we need the relations
+  gameResult: GameResult
+) {
+  // If there's no contract ID, there's no payout
+  if (!game.contractId) {
+    return null;
+  }
+
+  try {
+    // Get contract game details to get bet amount
+    const contractGame = await BackendSmartContractService.getContractGame(
+      game.contractId
+    );
+
+    // Convert bet amount from wei to USDC (assuming 6 decimals for USDC)
+    const betAmountInUsdc = Number(contractGame.betAmount) / 1000000;
+
+    // Determine winner
+    let winnerId = null;
+    let winnerPayout = 0;
+
+    if (gameResult === GameResult.DRAW) {
+      // In a draw, both players get their bet back
+      winnerPayout = betAmountInUsdc; // Each player gets their original bet
+    } else {
+      // Determine winner based on game result and color assignment
+      const creatorIsWhite = game.isWhite === "CREATOR";
+      const isWhiteWinner = gameResult === GameResult.WHITE_WON;
+      const creatorWon = creatorIsWhite === isWhiteWinner;
+
+      winnerId = creatorWon ? game.creator.user?.id : game.opponent?.user?.id;
+      winnerPayout = betAmountInUsdc * 2; // Winner gets both bets (minus any fees)
+    }
+
+    return {
+      betAmount: betAmountInUsdc,
+      winnerId,
+      winnerPayout,
+    };
+  } catch (error) {
+    console.error(
+      `[PAYOUT] Error calculating payout info for game ${game.id}:`,
+      error
+    );
+    return null;
   }
 }

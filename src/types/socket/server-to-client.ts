@@ -81,6 +81,25 @@ export type GameEndedEvent = {
   gameId: string;
   userId: string;
   reason: GameEndReason;
+  ratingChanges?: {
+    whitePlayer: {
+      userId: string;
+      oldRating: number;
+      newRating: number;
+      change: number;
+    };
+    blackPlayer: {
+      userId: string;
+      oldRating: number;
+      newRating: number;
+      change: number;
+    };
+  };
+  payoutInfo?: {
+    betAmount: number; // in USDC
+    winnerId: string | null; // null for draws
+    winnerPayout: number; // in USDC
+  };
 };
 
 // 7. Game paused: Participant left
