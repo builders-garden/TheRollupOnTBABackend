@@ -21,6 +21,7 @@ describe("Elo.calculateEloRating", () => {
   test("new rating calculation over one game", () => {
     // [whiteRating, k, blackRating, outcomeScore, expectedDelta]
     // outcomeScore: 1 = win, 0.5 = draw, 0 = loss
+    expect(ratingDiff(1037.6, 40, 1000, 1)).toBe(18);
     expect(ratingDiff(1500, 40, 1500, 1)).toBe(20);
     expect(ratingDiff(1500, 40, 1500, 0)).toBe(-20);
     expect(ratingDiff(1500, 40, 1500, 0.5)).toBe(0);

@@ -62,7 +62,7 @@ for (const [up, value] of conversionSteps) {
 
 // Usage:
 function getExpectedScore(ratingDiff: number) {
-  const absDiff = Math.min(Math.abs(ratingDiff), 400);
+  const absDiff = Math.floor(Math.min(Math.abs(ratingDiff), 400));
   const expected = conversionTableFIDE[absDiff];
   return ratingDiff <= 0 ? expected : 1 - expected;
 }
@@ -98,10 +98,20 @@ export function calculateEloRating({
   const expectedBlack = getExpectedScore(-ratingDiff);
 
   // Update the Elo Ratings
-  const newWhiteEloRating =
-    whiteUserRating + whiteUserKFactor * (outcomeScore - expectedWhite);
-  const newBlackEloRating =
-    blackUserRating + blackUserKFactor * (1 - outcomeScore - expectedBlack);
+  const newWhiteEloRating = Math.max(
+    1000,
+    Math.min(
+      4000,
+      whiteUserRating + whiteUserKFactor * (outcomeScore - expectedWhite)
+    )
+  );
+  const newBlackEloRating = Math.max(
+    1000,
+    Math.min(
+      4000,
+      blackUserRating + blackUserKFactor * (1 - outcomeScore - expectedBlack)
+    )
+  );
 
   return { newWhiteEloRating, newBlackEloRating };
 }
