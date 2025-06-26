@@ -93,3 +93,29 @@ export function updateGameWithMove(
     },
   });
 }
+
+/**
+ * Conditionally end a game only if it's not already ended.
+ * This prevents race conditions where multiple calls try to end the same game.
+ *
+ * @param gameId - The id of the game to end
+ * @param game - The updates to apply to the game
+ * @returns The updated game if successful, null if game was already ended
+ */
+export async function endGameIfNotEnded(
+  gameId: string,
+  game: Prisma.GameUpdateInput
+) {
+  try {
+    return await prisma.game.updateMany({
+      where: {
+        id: gameId,
+        gameState: { not: "ENDED" }, // Only update if not already ended
+      },
+      data: game,
+    });
+  } catch (error) {
+    console.error(`[DB] Error conditionally ending game ${gameId}:`, error);
+    throw error;
+  }
+}

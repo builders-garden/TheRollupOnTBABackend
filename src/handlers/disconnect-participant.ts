@@ -6,6 +6,8 @@ import {
 import { MatchmakingQueue } from "../lib/matchmaking-queue";
 import { ServerToClientSocketEvents } from "../types/enums";
 import { GameParticipantStatus, GameEndReason } from "@prisma/client";
+import { getGameById } from "../lib/prisma/queries";
+import { handleGameEnd } from "../lib/game-end-handler";
 
 // Store disconnect timeouts in memory (gameId+userId as key)
 export const disconnectTimeouts: Map<string, NodeJS.Timeout> = new Map();
@@ -73,12 +75,22 @@ export class DisconnectParticipantHandler extends SocketHandler {
           );
           return;
         }
+
+        // Check if game is already ended before processing disconnect timeout
+        const currentGame = await getGameById(gameParticipant.gameId);
+        if (!currentGame || currentGame.gameState === "ENDED") {
+          console.log(
+            `[DISCONNECT] Game ${gameParticipant.gameId} already ended. Skipping disconnect timeout.`
+          );
+          disconnectTimeouts.delete(timeoutKey);
+          return;
+        }
+
         const opponent = await this.getOpponent(
           gameParticipant.gameId,
           gameParticipant.userId
         );
         if (opponent) {
-          const { handleGameEnd } = await import("../lib/game-end-handler");
           // Since we no longer have color on participant, we'll just use resign reason
           const reason = GameEndReason.WHITE_RESIGNED; // This will be corrected in handleGameEnd based on actual game state
           await handleGameEnd(
@@ -96,7 +108,6 @@ export class DisconnectParticipantHandler extends SocketHandler {
 
   // Helper to get opponent participant
   async getOpponent(gameId: string, userId: string) {
-    const { getGameById } = await import("../lib/prisma/queries/game");
     const game = await getGameById(gameId);
     if (!game) return null;
     const isUserCreator = game.creator.user?.id === userId;

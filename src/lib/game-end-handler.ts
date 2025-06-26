@@ -1,13 +1,17 @@
 import { GameState, GameEndReason, GameResult } from "@prisma/client";
 import { ChessTimerManager } from "./timer-manager";
-import { getGameById, updateGame } from "./prisma/queries";
-import { finalizeTimerValues } from "./prisma/queries/timer-persistence";
+import { getGameById, updateGame, endGameIfNotEnded } from "./prisma/queries";
+import {
+  finalizeTimerValues,
+  getUserIdByColor,
+} from "./prisma/queries/timer-persistence";
 import type { Server } from "socket.io";
 import { ServerToClientSocketEvents } from "../types/enums";
 import { sendFrameNotification } from "./notifications";
 import { getGameEndReason } from "./utils";
 import { BackendSmartContractService } from "./smart-contract-service";
 import { updateRatings, calculateRatingChanges } from "./ratings";
+import { disconnectTimeouts } from "../handlers";
 
 /**
  * Central handler for all game ending scenarios
@@ -33,10 +37,18 @@ export async function handleGameEnd(
     const timerStopped = chessTimerManager.stopTimer(gameId);
     console.log(`[GAME END] Timer stopped for game ${gameId}: ${timerStopped}`);
 
-    // 3. Determine game result based on reason
+    // 3. Check if game already ended
     const game = await getGameById(gameId);
     if (!game) {
       console.error(`[GAME END] Game ${gameId} not found`);
+      return;
+    }
+
+    // Prevent multiple game endings
+    if (game.gameState === GameState.ENDED) {
+      console.log(
+        `[GAME END] Game ${gameId} already ended. Skipping duplicate end request.`
+      );
       return;
     }
 
@@ -82,13 +94,29 @@ export async function handleGameEnd(
       blackUser.user.username
     );
 
-    // 4. Update game state to ENDED
-    await updateGame(gameId, {
-      gameState: GameState.ENDED,
-      gameEndReason: reason,
-      gameResult,
-      endedAt: new Date(),
-    });
+    // 4. Update game state to ENDED (with additional safety check)
+    try {
+      const updateResult = await endGameIfNotEnded(gameId, {
+        gameState: GameState.ENDED,
+        gameEndReason: reason,
+        gameResult,
+        endedAt: new Date(),
+      });
+
+      // Check if we actually updated any rows (count should be 1)
+      if (!updateResult || updateResult.count === 0) {
+        console.log(
+          `[GAME END] Game ${gameId} was already ended or not found. Skipping duplicate end request.`
+        );
+        return;
+      }
+    } catch (error) {
+      console.error(
+        `[GAME END] Error updating game ${gameId} to ENDED state:`,
+        error
+      );
+      return;
+    }
 
     // Calculate rating changes before updating
     const ratingChanges = await calculateRatingChanges({
@@ -166,7 +194,20 @@ export async function handleGameEnd(
     chessTimerManager.deleteTimer(gameId);
     console.log(`[GAME END] Timer deleted for game ${gameId}`);
 
-    // 8. Emit game ended event to all clients in the game room
+    // 8. Clear any pending disconnect timeouts for this game
+    const timeoutKeys = Array.from(disconnectTimeouts.keys()).filter((key) =>
+      key.startsWith(gameId)
+    );
+    for (const key of timeoutKeys) {
+      const timeout = disconnectTimeouts.get(key);
+      if (timeout) {
+        clearTimeout(timeout);
+        disconnectTimeouts.delete(key);
+        console.log(`[GAME END] Cleared disconnect timeout for ${key}`);
+      }
+    }
+
+    // 9. Emit game ended event to all clients in the game room
     // This will trigger frontend timer stopping
     io.to(gameId).emit(ServerToClientSocketEvents.GAME_ENDED, {
       gameId,
@@ -176,7 +217,7 @@ export async function handleGameEnd(
       payoutInfo,
     });
 
-    // 9. Send notification to all participants
+    // 10. Send notification to all participants
     for (const participant of [creatorParticipant, opponentParticipant]) {
       if (participant.user) {
         await sendFrameNotification({
@@ -219,9 +260,6 @@ export async function handleTimerExpiration(
 ): Promise<void> {
   try {
     // Get user ID for the player who timed out
-    const { getUserIdByColor } = await import(
-      "./prisma/queries/timer-persistence"
-    );
     const userId = await getUserIdByColor(gameId, color);
 
     if (!userId) {
