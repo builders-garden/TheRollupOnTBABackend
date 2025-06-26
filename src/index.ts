@@ -16,6 +16,7 @@ import { setIOInstance } from "./lib/socket";
 import { ChessTimerManager } from "./lib/timer-manager";
 import { recoverActiveTimers } from "./lib/prisma/queries/timer-persistence";
 import { handleTimerExpiration } from "./lib/game-end-handler";
+import { ratingScheduler } from "./lib/rating-scheduler";
 import {
   AcceptGameEndResponseHandler,
   DisconnectParticipantHandler,
@@ -107,6 +108,14 @@ chessTimerManager.setOnTimerExpired(async (gameId, color) => {
 
 // Recover active timers from database on startup
 recoverActiveTimers();
+
+// Start the weekly rating update scheduler
+ratingScheduler.startScheduler();
+console.log(
+  `[APP] Rating scheduler started. Next update: ${ratingScheduler
+    .getNextRun()
+    ?.toISOString()}`
+);
 
 // Socket.IO connection logic
 io.on("connection", (socket) => {
@@ -233,6 +242,7 @@ process.on("SIGINT", () => {
   console.log("Shutting down server...");
   chessTimerManager.stopAllTimers();
   chessTimerManager.cleanup();
+  ratingScheduler.stopScheduler();
   httpServer.close();
   process.exit(0);
 });
@@ -241,6 +251,7 @@ process.on("SIGTERM", () => {
   console.log("Shutting down server...");
   chessTimerManager.stopAllTimers();
   chessTimerManager.cleanup();
+  ratingScheduler.stopScheduler();
   httpServer.close();
   process.exit(0);
 });

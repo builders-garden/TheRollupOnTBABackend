@@ -17,12 +17,20 @@ export function getGameById(gameId: string) {
     include: {
       creator: {
         include: {
-          user: true,
+          user: {
+            include: {
+              statistics: true,
+            },
+          },
         },
       },
       opponent: {
         include: {
-          user: true,
+          user: {
+            include: {
+              statistics: true,
+            },
+          },
         },
       },
     },

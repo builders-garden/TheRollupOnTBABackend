@@ -7,6 +7,7 @@ import { ServerToClientSocketEvents } from "../types/enums";
 import { sendFrameNotification } from "./notifications";
 import { getGameEndReason } from "./utils";
 import { BackendSmartContractService } from "./smart-contract-service";
+import { updateRatings } from "./ratings";
 
 /**
  * Central handler for all game ending scenarios
@@ -87,6 +88,14 @@ export async function handleGameEnd(
       gameEndReason: reason,
       gameResult,
       endedAt: new Date(),
+    });
+
+    // update ratings
+    await updateRatings({
+      gameId,
+      whiteUser,
+      blackUser,
+      gameResult,
     });
 
     // 5. Finalize game on smart contract (if contract ID exists)

@@ -22,7 +22,7 @@ export class JoinMatchmakingQueueHandler extends SocketHandler {
         !gameOption ||
         !wageAmount
       ) {
-        console.error(`[MATCHMAKING] Invalid data:`, {
+        console.error("[MATCHMAKING] Invalid data:", {
           userId,
           userFid,
           username,
@@ -38,7 +38,7 @@ export class JoinMatchmakingQueueHandler extends SocketHandler {
       }
 
       if (typeof userFid !== "number" || userFid <= 0) {
-        console.error(`[MATCHMAKING] Invalid userFid:`, userFid);
+        console.error("[MATCHMAKING] Invalid userFid:", userFid);
         this.socket.emit(ServerToClientSocketEvents.ERROR, {
           code: 400,
           message: "Invalid user FID",
@@ -74,7 +74,7 @@ export class JoinMatchmakingQueueHandler extends SocketHandler {
         position: queueStatus.playersInQueue, // They are the last in queue
       });
     } catch (error) {
-      console.error(`[MATCHMAKING] Error joining queue:`, error);
+      console.error("[MATCHMAKING] Error joining queue:", error);
       this.socket.emit(ServerToClientSocketEvents.ERROR, {
         code: 500,
         message: "Failed to join matchmaking queue",
