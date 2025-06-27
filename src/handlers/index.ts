@@ -7,6 +7,7 @@ export * from "./join-game";
 export * from "./join-matchmaking-queue";
 export * from "./leave-matchmaking-queue";
 export * from "./move-piece";
+export * from "./participant-not-ready";
 export * from "./participant-ready";
 export * from "./payment-confirmed";
 export * from "./reset-game";

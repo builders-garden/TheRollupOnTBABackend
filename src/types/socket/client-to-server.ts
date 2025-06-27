@@ -30,6 +30,12 @@ export type ParticipantReadyEvent = {
 	userId: string;
 };
 
+// 3.b Game Starting: Participant not ready (revoke ready state)
+export type ParticipantNotReadyEvent = {
+	gameId: string;
+	userId: string;
+};
+
 // 5. Game Playing
 export type MovePieceEvent = {
 	gameId: string;
@@ -109,6 +115,7 @@ export type ClientToServerEvents = {
 	[ClientToServerSocketEvents.JOIN_GAME_REQUEST]: JoinGameRequestEvent;
 	[ClientToServerSocketEvents.PAYMENT_CONFIRMED]: PaymentConfirmedEvent;
 	[ClientToServerSocketEvents.PARTICIPANT_READY]: ParticipantReadyEvent;
+	[ClientToServerSocketEvents.PARTICIPANT_NOT_READY]: ParticipantNotReadyEvent;
 	[ClientToServerSocketEvents.MOVE_PIECE]: MovePieceEvent;
 	[ClientToServerSocketEvents.MESSAGE_SENT]: MessageSentEvent;
 	[ClientToServerSocketEvents.SPECTATOR_JOIN]: SpectatorJoinEvent;
