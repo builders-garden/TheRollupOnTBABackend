@@ -17,6 +17,7 @@ import {
 	JoinMatchmakingQueueHandler,
 	LeaveMatchmakingQueueHandler,
 	MovePieceHandler,
+	ParticipantNotReadyHandler,
 	ParticipantReadyHandler,
 	PaymentConfirmedHandler,
 } from "./handlers";
@@ -37,6 +38,7 @@ import type {
 	LeaveMatchmakingQueueEvent,
 	MessageSentEvent,
 	MovePieceEvent,
+	ParticipantNotReadyEvent,
 	ParticipantReadyEvent,
 	PaymentConfirmedEvent,
 } from "./types";
@@ -148,6 +150,16 @@ io.on("connection", (socket) => {
 		async (data: ParticipantReadyEvent) => {
 			console.log("participant ready:", data);
 			const handler = new ParticipantReadyHandler(socket, io);
+			await handler.handle(data);
+		},
+	);
+
+	// 3.b Game starting - Participant not ready request (revoke ready state)
+	socket.on(
+		ClientToServerSocketEvents.PARTICIPANT_NOT_READY,
+		async (data: ParticipantNotReadyEvent) => {
+			console.log("participant not ready:", data);
+			const handler = new ParticipantNotReadyHandler(socket, io);
 			await handler.handle(data);
 		},
 	);

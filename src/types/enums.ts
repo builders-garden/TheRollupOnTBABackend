@@ -4,6 +4,7 @@ export enum ClientToServerSocketEvents {
 	JOIN_GAME_REQUEST = "join_game_request", // 2. join game
 	PAYMENT_CONFIRMED = "payment_confirmed", // 3. payment confirmed
 	PARTICIPANT_READY = "participant_ready", // 5. participant ready
+	PARTICIPANT_NOT_READY = "participant_not_ready", // 5.b participant not ready (revoke ready state)
 	MOVE_PIECE = "move_piece", // 6. move piece
 	END_GAME_REQUEST = "end_game_request", // 7. end game (resign or request draw)
 	ACCEPT_GAME_END_RESPONSE = "accept_game_end_response", // 8. accept game end response
