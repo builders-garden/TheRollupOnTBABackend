@@ -317,6 +317,8 @@ model UserStatistics {
   lichessRating            String?
   chessComUsername         String?
   lichessUsername          String?
+  chessComUser             Json?
+  lichessUser              Json?
   // game stats
   gamesPlayed              Int      @default(0)
   gamesWon                 Int      @default(0)
