@@ -5,7 +5,11 @@ import {
 } from "../lib/prisma/queries/game-participants";
 import { MatchmakingQueue } from "../lib/matchmaking-queue";
 import { ServerToClientSocketEvents } from "../types/enums";
-import { GameParticipantStatus, GameEndReason } from "@prisma/client";
+import {
+  GameParticipantStatus,
+  GameEndReason,
+  GameState,
+} from "@prisma/client";
 import { getGameById } from "../lib/prisma/queries";
 import { handleGameEnd } from "../lib/game-end-handler";
 
@@ -62,47 +66,56 @@ export class DisconnectParticipantHandler extends SocketHandler {
         }
       );
 
-      // Set 30s timeout for auto-forfeit
-      const timeoutKey = `${gameParticipant.gameId}:${gameParticipant.userId}`;
-      if (disconnectTimeouts.has(timeoutKey)) {
-        clearTimeout(disconnectTimeouts.get(timeoutKey));
-      }
-      const timeout = setTimeout(async () => {
-        // End game, opponent wins by default
-        if (!gameParticipant.userId) {
-          console.log(
-            `[DISCONNECT] No userId for participant ${gameParticipant.id}`
-          );
-          return;
+      // Only set resignation timeout for games that are actually ACTIVE
+      // Games in WAITING state should remain open until manually deleted
+      const currentGame = await getGameById(gameParticipant.gameId);
+      if (currentGame && currentGame.gameState === GameState.ACTIVE) {
+        // Set 30s timeout for auto-forfeit only for active games
+        const timeoutKey = `${gameParticipant.gameId}:${gameParticipant.userId}`;
+        if (disconnectTimeouts.has(timeoutKey)) {
+          clearTimeout(disconnectTimeouts.get(timeoutKey));
         }
+        const timeout = setTimeout(async () => {
+          // End game, opponent wins by default
+          if (!gameParticipant.userId) {
+            console.log(
+              `[DISCONNECT] No userId for participant ${gameParticipant.id}`
+            );
+            return;
+          }
 
-        // Check if game is already ended before processing disconnect timeout
-        const currentGame = await getGameById(gameParticipant.gameId);
-        if (!currentGame || currentGame.gameState === "ENDED") {
-          console.log(
-            `[DISCONNECT] Game ${gameParticipant.gameId} already ended. Skipping disconnect timeout.`
-          );
-          disconnectTimeouts.delete(timeoutKey);
-          return;
-        }
+          // Check if game is already ended before processing disconnect timeout
+          const currentGame = await getGameById(gameParticipant.gameId);
+          if (!currentGame || currentGame.gameState === GameState.ENDED) {
+            console.log(
+              `[DISCONNECT] Game ${gameParticipant.gameId} already ended. Skipping disconnect timeout.`
+            );
+            disconnectTimeouts.delete(timeoutKey);
+            return;
+          }
 
-        const opponent = await this.getOpponent(
-          gameParticipant.gameId,
-          gameParticipant.userId
-        );
-        if (opponent) {
-          // Since we no longer have color on participant, we'll just use resign reason
-          const reason = GameEndReason.WHITE_RESIGNED; // This will be corrected in handleGameEnd based on actual game state
-          await handleGameEnd(
-            this.io,
+          const opponent = await this.getOpponent(
             gameParticipant.gameId,
-            gameParticipant.userId,
-            reason
+            gameParticipant.userId
           );
-        }
-        disconnectTimeouts.delete(timeoutKey);
-      }, 30000);
-      disconnectTimeouts.set(timeoutKey, timeout);
+          if (opponent) {
+            // Since we no longer have color on participant, we'll just use resign reason
+            const reason = GameEndReason.WHITE_RESIGNED; // This will be corrected in handleGameEnd based on actual game state
+            await handleGameEnd(
+              this.io,
+              gameParticipant.gameId,
+              gameParticipant.userId,
+              reason
+            );
+          }
+          disconnectTimeouts.delete(timeoutKey);
+        }, 30000);
+        disconnectTimeouts.set(timeoutKey, timeout);
+      } else {
+        console.log(
+          `[DISCONNECT] Game ${gameParticipant.gameId} is not active (state: ${currentGame?.gameState}). Not setting resignation timeout.`
+        );
+      }
     }
   }
 

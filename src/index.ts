@@ -19,6 +19,7 @@ import { handleTimerExpiration } from "./lib/game-end-handler";
 import { ratingScheduler } from "./lib/rating-scheduler";
 import {
   AcceptGameEndResponseHandler,
+  DeleteGameHandler,
   DisconnectParticipantHandler,
   EndGameHandler,
   GameChatMessagesHandler,
@@ -36,6 +37,7 @@ import type {
   MessageSentEvent,
   ParticipantReadyEvent,
   AcceptGameEndResponseEvent,
+  DeleteGameRequestEvent,
   PaymentConfirmedEvent,
   JoinMatchmakingQueueEvent,
   LeaveMatchmakingQueueEvent,
@@ -181,6 +183,16 @@ io.on("connection", (socket) => {
     async (data: AcceptGameEndResponseEvent) => {
       console.log("accept game end response:", data);
       const handler = new AcceptGameEndResponseHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
+
+  // 7. Game deletion - Delete game request (creator only)
+  socket.on(
+    ClientToServerSocketEvents.DELETE_GAME_REQUEST,
+    async (data: DeleteGameRequestEvent) => {
+      console.log("delete game:", data);
+      const handler = new DeleteGameHandler(socket, io);
       await handler.handle(data);
     }
   );

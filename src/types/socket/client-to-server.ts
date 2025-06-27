@@ -57,6 +57,12 @@ export type AcceptGameEndResponseEvent = {
   accepted: boolean;
 };
 
+// 7. Game Deletion: Delete game (creator only)
+export type DeleteGameRequestEvent = {
+  gameId: string;
+  userId: string;
+};
+
 // 8. Extras: Messages
 export type MessageSentEvent = {
   gameId: string;
@@ -108,6 +114,7 @@ export type ClientToServerEvents = {
   [ClientToServerSocketEvents.SPECTATOR_JOIN]: SpectatorJoinEvent;
   [ClientToServerSocketEvents.END_GAME_REQUEST]: EndGameRequestEvent;
   [ClientToServerSocketEvents.ACCEPT_GAME_END_RESPONSE]: AcceptGameEndResponseEvent;
+  [ClientToServerSocketEvents.DELETE_GAME_REQUEST]: DeleteGameRequestEvent;
   [ClientToServerSocketEvents.RESET_GAME_REQUEST]: ResetGameRequestEvent;
   [ClientToServerSocketEvents.JOIN_MATCHMAKING_QUEUE]: JoinMatchmakingQueueEvent;
   [ClientToServerSocketEvents.LEAVE_MATCHMAKING_QUEUE]: LeaveMatchmakingQueueEvent;

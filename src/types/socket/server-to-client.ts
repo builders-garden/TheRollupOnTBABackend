@@ -102,6 +102,13 @@ export type GameEndedEvent = {
   };
 };
 
+// 6.c Game Deletion: Game deleted
+export type GameDeletedEvent = {
+  gameId: string;
+  userId: string;
+  reason: "GAME_DELETED";
+};
+
 // 7. Game paused: Participant left
 export type ParticipantLeftEvent = {
   gameId: string;
@@ -235,6 +242,7 @@ export type ServerToClientEvents = {
   [ServerToClientSocketEvents.MOVE_PIECE_ERROR]: MovePieceErrorEvent;
   [ServerToClientSocketEvents.ACCEPT_GAME_END]: AcceptGameEndEvent;
   [ServerToClientSocketEvents.GAME_ENDED]: GameEndedEvent;
+  [ServerToClientSocketEvents.GAME_DELETED]: GameDeletedEvent;
   [ServerToClientSocketEvents.RESUME_GAME]: ResumeGameEvent;
   [ServerToClientSocketEvents.PARTICIPANT_LEFT]: ParticipantLeftEvent;
   [ServerToClientSocketEvents.PARTICIPANT_JOINED]: ParticipantJoinedEvent;

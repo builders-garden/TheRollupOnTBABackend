@@ -60,7 +60,9 @@ enum GameEndReason {
   // 8. draw: agreement
   WHITE_REQUESTED_DRAW
   BLACK_REQUESTED_DRAW
-  // 9. other
+  // 9. game deleted by creator
+  GAME_DELETED
+  // 10. other
   OTHER
 }
 

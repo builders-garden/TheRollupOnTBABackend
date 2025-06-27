@@ -1,4 +1,5 @@
 export * from "./accept-end-game-response";
+export * from "./delete-game";
 export * from "./disconnect-participant";
 export * from "./end-game";
 export * from "./game-chat-messages";

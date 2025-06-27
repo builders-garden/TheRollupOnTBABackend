@@ -7,12 +7,13 @@ export enum ClientToServerSocketEvents {
   MOVE_PIECE = "move_piece", // 6. move piece
   END_GAME_REQUEST = "end_game_request", // 7. end game (resign or request draw)
   ACCEPT_GAME_END_RESPONSE = "accept_game_end_response", // 8. accept game end response
-  MESSAGE_SENT = "message_sent", // 9. message sent (text, image or tip)
-  SPECTATOR_JOIN = "spectator_join", // 10. spectator join
-  RESET_GAME_REQUEST = "reset_game_request", // 11. reset game request (dev only)
+  DELETE_GAME_REQUEST = "delete_game_request", // 9. delete game (creator only)
+  MESSAGE_SENT = "message_sent", // 10. message sent (text, image or tip)
+  SPECTATOR_JOIN = "spectator_join", // 11. spectator join
+  RESET_GAME_REQUEST = "reset_game_request", // 12. reset game request (dev only)
   // matchmaking
-  JOIN_MATCHMAKING_QUEUE = "join_matchmaking_queue", // 12. join matchmaking queue
-  LEAVE_MATCHMAKING_QUEUE = "leave_matchmaking_queue", // 13. leave matchmaking queue
+  JOIN_MATCHMAKING_QUEUE = "join_matchmaking_queue", // 13. join matchmaking queue
+  LEAVE_MATCHMAKING_QUEUE = "leave_matchmaking_queue", // 14. leave matchmaking queue
 }
 
 // server to client
@@ -28,20 +29,21 @@ export enum ServerToClientSocketEvents {
   MOVE_PIECE_ERROR = "move_piece_error", // 7.b move piece error
   ACCEPT_GAME_END = "accept_game_end", // 8. accept game end (ask other player to accept draw)
   GAME_ENDED = "game_ended", // 9. game ended (either via resign or draw request accepted)
-  RESUME_GAME = "resume_game", // 10. resume game (after draw request rejected)
+  GAME_DELETED = "game_deleted", // 10. game deleted by creator
+  RESUME_GAME = "resume_game", // 11. resume game (after draw request rejected)
   // extra
-  MESSAGE_SENT_ACK = "message_sent_ack", // 11. message sent acknowledged
-  SPECTATOR_JOIN_ACK = "spectator_join_ack", // 12. spectator join acknowledged
+  MESSAGE_SENT_ACK = "message_sent_ack", // 12. message sent acknowledged
+  SPECTATOR_JOIN_ACK = "spectator_join_ack", // 13. spectator join acknowledged
   // timer events
-  TIMER_UPDATE = "timer_update", // 13. timer update (1-second intervals)
-  TIMER_EXPIRED = "timer_expired", // 14. timer expired (timeout)
+  TIMER_UPDATE = "timer_update", // 14. timer update (1-second intervals)
+  TIMER_EXPIRED = "timer_expired", // 15. timer expired (timeout)
   // matchmaking
-  QUEUE_STATUS_UPDATE = "queue_status_update", // 15. queue status update
-  MATCH_FOUND = "match_found", // 16. match found
-  QUEUE_JOINED = "queue_joined", // 17. successfully joined queue
-  QUEUE_LEFT = "queue_left", // 18. successfully left queue
+  QUEUE_STATUS_UPDATE = "queue_status_update", // 16. queue status update
+  MATCH_FOUND = "match_found", // 17. match found
+  QUEUE_JOINED = "queue_joined", // 18. successfully joined queue
+  QUEUE_LEFT = "queue_left", // 19. successfully left queue
   // other
-  ERROR = "error", // 19. error
-  BANNED = "banned", // 20. user found cheating ==> banned
-  RESET_GAME = "reset_game", // 21. reset game (dev only)
+  ERROR = "error", // 20. error
+  BANNED = "banned", // 21. user found cheating ==> banned
+  RESET_GAME = "reset_game", // 22. reset game (dev only)
 }
