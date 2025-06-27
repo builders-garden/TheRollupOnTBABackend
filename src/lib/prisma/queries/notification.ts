@@ -11,19 +11,19 @@ import { prisma } from "../client";
  * @returns The notification details for the user, or undefined if the user doesn't exist or has no notification details
  */
 export const getUserNotificationDetails = async (
-  fid: number
+	fid: number,
 ): Promise<FrameNotificationDetails | undefined> => {
-  const user = await prisma.user.findUnique({
-    where: { fid },
-    select: { notificationDetails: true },
-  });
+	const user = await prisma.user.findUnique({
+		where: { fid },
+		select: { notificationDetails: true },
+	});
 
-  if (!user || !user.notificationDetails) return undefined;
+	if (!user || !user.notificationDetails) return undefined;
 
-  return typeof user.notificationDetails === "string" &&
-    user.notificationDetails !== ""
-    ? JSON.parse(user.notificationDetails)
-    : undefined;
+	return typeof user.notificationDetails === "string" &&
+		user.notificationDetails !== ""
+		? JSON.parse(user.notificationDetails)
+		: undefined;
 };
 
 /**
@@ -37,15 +37,15 @@ export const getUserNotificationDetails = async (
  * @returns void
  */
 export const setUserNotificationDetails = async (
-  fid: number,
-  details: FrameNotificationDetails
+	fid: number,
+	details: FrameNotificationDetails,
 ): Promise<void> => {
-  await prisma.user.update({
-    where: { fid },
-    data: {
-      notificationDetails: JSON.stringify(details),
-    },
-  });
+	await prisma.user.update({
+		where: { fid },
+		data: {
+			notificationDetails: JSON.stringify(details),
+		},
+	});
 };
 
 /**
@@ -58,12 +58,12 @@ export const setUserNotificationDetails = async (
  * @returns void
  */
 export const deleteUserNotificationDetails = async (
-  fid: number
+	fid: number,
 ): Promise<void> => {
-  await prisma.user.update({
-    where: { fid },
-    data: {
-      notificationDetails: undefined,
-    },
-  });
+	await prisma.user.update({
+		where: { fid },
+		data: {
+			notificationDetails: undefined,
+		},
+	});
 };

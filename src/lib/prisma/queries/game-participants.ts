@@ -1,5 +1,5 @@
-import { prisma } from "../client";
 import type { GameParticipant, Prisma } from "@prisma/client";
+import { prisma } from "../client";
 
 /**
  * Get a game participant by their id.
@@ -12,13 +12,13 @@ import type { GameParticipant, Prisma } from "@prisma/client";
  * @returns The game participant if found, otherwise null
  */
 export const getGameParticipant = async (gameId: string, userId: string) => {
-  if (!userId || !gameId) return null;
-  return prisma.gameParticipant.findFirst({
-    where: { userId, gameId },
-    include: {
-      user: true,
-    },
-  });
+	if (!userId || !gameId) return null;
+	return prisma.gameParticipant.findFirst({
+		where: { userId, gameId },
+		include: {
+			user: true,
+		},
+	});
 };
 
 /**
@@ -31,14 +31,14 @@ export const getGameParticipant = async (gameId: string, userId: string) => {
  * @returns The game participants if found, otherwise null
  */
 export const getGameParticipantsBySocketId = async (
-  socketId: string
+	socketId: string,
 ): Promise<GameParticipant[]> => {
-  return prisma.gameParticipant.findMany({
-    where: { socketId },
-    include: {
-      user: true,
-    },
-  });
+	return prisma.gameParticipant.findMany({
+		where: { socketId },
+		include: {
+			user: true,
+		},
+	});
 };
 
 /**
@@ -53,14 +53,14 @@ export const getGameParticipantsBySocketId = async (
  * @returns The updated game participant
  */
 export const updateGameParticipant = async (
-  gameId: string,
-  userId: string,
-  gameParticipant: Prisma.GameParticipantUpdateInput
+	gameId: string,
+	userId: string,
+	gameParticipant: Prisma.GameParticipantUpdateInput,
 ) => {
-  return prisma.gameParticipant.updateMany({
-    where: { userId, gameId },
-    data: gameParticipant,
-  });
+	return prisma.gameParticipant.updateMany({
+		where: { userId, gameId },
+		data: gameParticipant,
+	});
 };
 
 /**
@@ -73,9 +73,9 @@ export const updateGameParticipant = async (
  * @returns The created game participant
  */
 export const createGameParticipant = async (
-  gameParticipant: Prisma.GameParticipantCreateInput
+	gameParticipant: Prisma.GameParticipantCreateInput,
 ): Promise<Omit<GameParticipant, "id" | "createdAt" | "updatedAt">> => {
-  return prisma.gameParticipant.create({
-    data: gameParticipant,
-  });
+	return prisma.gameParticipant.create({
+		data: gameParticipant,
+	});
 };

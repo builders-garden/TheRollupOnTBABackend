@@ -1,139 +1,139 @@
-import { updateGameParticipant } from "../lib/prisma/queries/game-participants";
-import { SocketHandler } from "./socket-handler";
-import type { ParticipantReadyEvent } from "../types";
-import { ServerToClientSocketEvents } from "../types/enums";
 import { GameParticipantStatus, GameState } from "@prisma/client";
 import { getGameById, updateGame } from "../lib/prisma/queries/game";
-import { ChessTimerManager } from "../lib/timer-manager";
+import { updateGameParticipant } from "../lib/prisma/queries/game-participants";
 import { initializeGameTimers } from "../lib/prisma/queries/timer-persistence";
+import { ChessTimerManager } from "../lib/timer-manager";
 import { getGameOptionTime } from "../lib/utils";
+import type { ParticipantReadyEvent } from "../types";
+import { ServerToClientSocketEvents } from "../types/enums";
 import { disconnectTimeouts } from "./disconnect-participant";
+import { SocketHandler } from "./socket-handler";
 
 export class ParticipantReadyHandler extends SocketHandler {
-  async handle({ gameId, userId }: ParticipantReadyEvent) {
-    try {
-      // 0 check game state
-      const game = await getGameById(gameId);
-      if (!game) {
-        console.error(`[PARTICIPANT READY] Game ${gameId} not found`);
-        return;
-      }
-      if (game.gameState === GameState.ENDED) {
-        console.error(`[PARTICIPANT READY] Game ${gameId} is ended`);
-        return;
-      }
+	async handle({ gameId, userId }: ParticipantReadyEvent) {
+		try {
+			// 0 check game state
+			const game = await getGameById(gameId);
+			if (!game) {
+				console.error(`[PARTICIPANT READY] Game ${gameId} not found`);
+				return;
+			}
+			if (game.gameState === GameState.ENDED) {
+				console.error(`[PARTICIPANT READY] Game ${gameId} is ended`);
+				return;
+			}
 
-      // 1 update game participant status to ready
-      await updateGameParticipant(gameId, userId, {
-        status: GameParticipantStatus.READY,
-        socketId: this.socket.id,
-      });
-      // Cancel disconnect timeout if present
-      const timeoutKey = `${gameId}:${userId}`;
-      if (disconnectTimeouts?.has(timeoutKey)) {
-        clearTimeout(disconnectTimeouts.get(timeoutKey));
-        disconnectTimeouts.delete(timeoutKey);
-      }
-      // 2 let user join the room
-      this.socket.join(gameId);
-      console.log(
-        `[PARTICIPANT READY] user ${userId} ready for game ${gameId}`
-      );
+			// 1 update game participant status to ready
+			await updateGameParticipant(gameId, userId, {
+				status: GameParticipantStatus.READY,
+				socketId: this.socket.id,
+			});
+			// Cancel disconnect timeout if present
+			const timeoutKey = `${gameId}:${userId}`;
+			if (disconnectTimeouts?.has(timeoutKey)) {
+				clearTimeout(disconnectTimeouts.get(timeoutKey));
+				disconnectTimeouts.delete(timeoutKey);
+			}
+			// 2 let user join the room
+			this.socket.join(gameId);
+			console.log(
+				`[PARTICIPANT READY] user ${userId} ready for game ${gameId}`,
+			);
 
-      // Always emit PARTICIPANT_READY_ACK when a participant becomes ready
-      this.emitToGame(
-        gameId,
-        ServerToClientSocketEvents.PARTICIPANT_READY_ACK,
-        {
-          gameId,
-          userId,
-          status: GameParticipantStatus.READY,
-        }
-      );
+			// Always emit PARTICIPANT_READY_ACK when a participant becomes ready
+			this.emitToGame(
+				gameId,
+				ServerToClientSocketEvents.PARTICIPANT_READY_ACK,
+				{
+					gameId,
+					userId,
+					status: GameParticipantStatus.READY,
+				},
+			);
 
-      // Get updated game to check all participants
-      const updatedGame = await getGameById(gameId);
-      if (!updatedGame) {
-        console.error(
-          `[PARTICIPANT READY] Game ${gameId} not found after update`
-        );
-        return;
-      }
+			// Get updated game to check all participants
+			const updatedGame = await getGameById(gameId);
+			if (!updatedGame) {
+				console.error(
+					`[PARTICIPANT READY] Game ${gameId} not found after update`,
+				);
+				return;
+			}
 
-      const participants = [updatedGame.creator, updatedGame.opponent].filter(
-        (p) => p !== null
-      );
+			const participants = [updatedGame.creator, updatedGame.opponent].filter(
+				(p) => p !== null,
+			);
 
-      const areAllParticipantsReady = participants.every(
-        (participant) => participant.status === GameParticipantStatus.READY
-      );
-      if (areAllParticipantsReady) {
-        // 3 update game state to active
-        await updateGame(gameId, { gameState: GameState.ACTIVE });
+			const areAllParticipantsReady = participants.every(
+				(participant) => participant.status === GameParticipantStatus.READY,
+			);
+			if (areAllParticipantsReady) {
+				// 3 update game state to active
+				await updateGame(gameId, { gameState: GameState.ACTIVE });
 
-        // 3.1 Initialize and start timer (only if not already exists)
-        const chessTimerManager = ChessTimerManager.getInstance();
-        const game = updatedGame;
+				// 3.1 Initialize and start timer (only if not already exists)
+				const chessTimerManager = ChessTimerManager.getInstance();
+				const game = updatedGame;
 
-        // Check if timer already exists for this game
-        const existingTimer = chessTimerManager.getTimer(gameId);
-        if (!existingTimer) {
-          // Get time control settings
-          const { duration } = getGameOptionTime(
-            game.gameMode,
-            game.gameOption
-          );
+				// Check if timer already exists for this game
+				const existingTimer = chessTimerManager.getTimer(gameId);
+				if (!existingTimer) {
+					// Get time control settings
+					const { duration } = getGameOptionTime(
+						game.gameMode,
+						game.gameOption,
+					);
 
-          // Initialize timer values in database
-          await initializeGameTimers(gameId, duration);
+					// Initialize timer values in database
+					await initializeGameTimers(gameId, duration);
 
-          // Create and start timer
-          const timer = chessTimerManager.createTimer(
-            gameId,
-            game.gameMode,
-            game.gameOption,
-            duration,
-            duration,
-            "w" // white moves first
-          );
+					// Create and start timer
+					const timer = chessTimerManager.createTimer(
+						gameId,
+						game.gameMode,
+						game.gameOption,
+						duration,
+						duration,
+						"w", // white moves first
+					);
 
-          if (timer) {
-            chessTimerManager.startTimer(gameId, "w");
-            console.log(`[TIMER] Started timer for game ${gameId}`);
-          }
-        } else {
-          console.log(
-            `[TIMER] Timer already exists for game ${gameId}, not creating duplicate`
-          );
-        }
+					if (timer) {
+						chessTimerManager.startTimer(gameId, "w");
+						console.log(`[TIMER] Started timer for game ${gameId}`);
+					}
+				} else {
+					console.log(
+						`[TIMER] Timer already exists for game ${gameId}, not creating duplicate`,
+					);
+				}
 
-        // 4 start the game
-        this.emitToGame(gameId, ServerToClientSocketEvents.START_GAME, {
-          gameId,
-          gameState: GameState.ACTIVE,
-        });
-      } else {
-        // 3 update game state to waiting
-        await updateGame(gameId, { gameState: GameState.WAITING });
-        // 4 emit to all participants that the game is not ready
-        this.emitToGame(
-          gameId,
-          ServerToClientSocketEvents.PARTICIPANT_READY_ACK,
-          {
-            gameId,
-            userId,
-            status: GameParticipantStatus.READY,
-          }
-        );
-      }
-    } catch (e) {
-      console.error(
-        `[PARTICIPANT READY] Error updating game participant: ${e}`
-      );
-      this.emitToGame(this.socket.id, ServerToClientSocketEvents.ERROR, {
-        code: 500,
-        message: "Error updating game participant",
-      });
-    }
-  }
+				// 4 start the game
+				this.emitToGame(gameId, ServerToClientSocketEvents.START_GAME, {
+					gameId,
+					gameState: GameState.ACTIVE,
+				});
+			} else {
+				// 3 update game state to waiting
+				await updateGame(gameId, { gameState: GameState.WAITING });
+				// 4 emit to all participants that the game is not ready
+				this.emitToGame(
+					gameId,
+					ServerToClientSocketEvents.PARTICIPANT_READY_ACK,
+					{
+						gameId,
+						userId,
+						status: GameParticipantStatus.READY,
+					},
+				);
+			}
+		} catch (e) {
+			console.error(
+				`[PARTICIPANT READY] Error updating game participant: ${e}`,
+			);
+			this.emitToGame(this.socket.id, ServerToClientSocketEvents.ERROR, {
+				code: 500,
+				message: "Error updating game participant",
+			});
+		}
+	}
 }

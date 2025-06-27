@@ -1,6 +1,6 @@
-import { prisma } from "../client";
 import type { Prisma, User } from "@prisma/client";
 import { fetchUserFromNeynar } from "../../neynar";
+import { prisma } from "../client";
 
 /**
  * Get a user by their id.
@@ -12,16 +12,16 @@ import { fetchUserFromNeynar } from "../../neynar";
  * @returns The user if found, otherwise null
  */
 export const getUserById = async (id: string): Promise<User | null> => {
-  const user = await prisma.user.findUnique({
-    where: { id },
-    include: {
-      statistics: true,
-    },
-  });
+	const user = await prisma.user.findUnique({
+		where: { id },
+		include: {
+			statistics: true,
+		},
+	});
 
-  if (!user) return null;
+	if (!user) return null;
 
-  return user;
+	return user;
 };
 
 /**
@@ -34,16 +34,16 @@ export const getUserById = async (id: string): Promise<User | null> => {
  * @returns The user if found, otherwise null
  */
 export const getUserByFid = async (fid: number): Promise<User | null> => {
-  const user = await prisma.user.findUnique({
-    where: { fid },
-    include: {
-      statistics: true,
-    },
-  });
+	const user = await prisma.user.findUnique({
+		where: { fid },
+		include: {
+			statistics: true,
+		},
+	});
 
-  if (!user) return null;
+	if (!user) return null;
 
-  return user;
+	return user;
 };
 
 /**
@@ -57,29 +57,29 @@ export const getUserByFid = async (fid: number): Promise<User | null> => {
  * @returns The user if found, otherwise the created user
  */
 export const getOrCreateUserByFid = async (
-  fid: number,
-  referrerFid?: number
+	fid: number,
+	referrerFid?: number,
 ): Promise<User> => {
-  const user = await getUserByFid(fid);
-  if (!user) {
-    const userFromNeynar = await fetchUserFromNeynar(fid);
-    if (!userFromNeynar) throw new Error("User not found in Neynar");
+	const user = await getUserByFid(fid);
+	if (!user) {
+		const userFromNeynar = await fetchUserFromNeynar(fid);
+		if (!userFromNeynar) throw new Error("User not found in Neynar");
 
-    const dbUser = await createUser({
-      fid,
-      username: userFromNeynar.username,
-      displayName: userFromNeynar.display_name,
-      avatarUrl: userFromNeynar.pfp_url,
-      walletAddresses: JSON.stringify(
-        userFromNeynar.verified_addresses.eth_addresses
-      ),
-      notificationDetails: null,
-      referrerFid: referrerFid ? referrerFid : null,
-    });
+		const dbUser = await createUser({
+			fid,
+			username: userFromNeynar.username,
+			displayName: userFromNeynar.display_name,
+			avatarUrl: userFromNeynar.pfp_url,
+			walletAddresses: JSON.stringify(
+				userFromNeynar.verified_addresses.eth_addresses,
+			),
+			notificationDetails: null,
+			referrerFid: referrerFid ? referrerFid : null,
+		});
 
-    return dbUser;
-  }
-  return user;
+		return dbUser;
+	}
+	return user;
 };
 
 /**
@@ -93,17 +93,17 @@ export const getOrCreateUserByFid = async (
  * @returns The updated user
  */
 export const updateUser = async (
-  fid: number,
-  updates: Prisma.UserUpdateInput
+	fid: number,
+	updates: Prisma.UserUpdateInput,
 ): Promise<User> => {
-  const updatedUser = await prisma.user.update({
-    where: {
-      fid,
-    },
-    data: updates,
-  });
+	const updatedUser = await prisma.user.update({
+		where: {
+			fid,
+		},
+		data: updates,
+	});
 
-  return updatedUser;
+	return updatedUser;
 };
 
 /**
@@ -112,14 +112,14 @@ export const updateUser = async (
  * @returns The created user
  */
 export const createUser = async (
-  user: Prisma.UserCreateInput
+	user: Prisma.UserCreateInput,
 ): Promise<User> => {
-  return await prisma.user.create({
-    data: user,
-    include: {
-      statistics: true,
-      notifications: true,
-      gameParticipants: true,
-    },
-  });
+	return await prisma.user.create({
+		data: user,
+		include: {
+			statistics: true,
+			notifications: true,
+			gameParticipants: true,
+		},
+	});
 };

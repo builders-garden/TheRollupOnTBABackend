@@ -10,7 +10,7 @@ import { prisma } from "../client";
  * @returns All spectators for the game
  */
 export const getGameSpectators = async (gameId: string) => {
-  return prisma.gameSpectator.findMany({
-    where: { gameId },
-  });
+	return prisma.gameSpectator.findMany({
+		where: { gameId },
+	});
 };
