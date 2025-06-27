@@ -68,6 +68,14 @@ export type AcceptGameEndEvent = {
 	reason: GameEndReason;
 };
 
+// 6.a Game Ending: Immediate acknowledgment for game end request
+export type GameEndAckEvent = {
+	gameId: string;
+	userId: string;
+	reason: GameEndReason;
+	message: string;
+};
+
 // 6.b Game Ending: user didnt accept the draw request
 export type ResumeGameEvent = {
 	gameId: string;
@@ -76,7 +84,7 @@ export type ResumeGameEvent = {
 	message: string;
 };
 
-// 6. Game Ending: Game ended
+// 6.c Game Ending: Game ended
 export type GameEndedEvent = {
 	gameId: string;
 	userId: string;
@@ -241,6 +249,7 @@ export type ServerToClientEvents = {
 	[ServerToClientSocketEvents.MOVE_PIECE_ACK]: MovePieceAckEvent;
 	[ServerToClientSocketEvents.MOVE_PIECE_ERROR]: MovePieceErrorEvent;
 	[ServerToClientSocketEvents.ACCEPT_GAME_END]: AcceptGameEndEvent;
+	[ServerToClientSocketEvents.GAME_END_ACK]: GameEndAckEvent;
 	[ServerToClientSocketEvents.GAME_ENDED]: GameEndedEvent;
 	[ServerToClientSocketEvents.GAME_DELETED]: GameDeletedEvent;
 	[ServerToClientSocketEvents.RESUME_GAME]: ResumeGameEvent;

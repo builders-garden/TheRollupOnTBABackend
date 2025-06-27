@@ -43,9 +43,20 @@ export class EndGameHandler extends SocketHandler {
 			reason === GameEndReason.WHITE_RESIGNED ||
 			reason === GameEndReason.BLACK_RESIGNED
 		) {
-			// Use centralized game end handler for resignations
-			// This will stop timers, update database, and emit events
-			await handleGameEnd(this.io, gameId, userId, reason);
+			// INSTANT RESPONSE: Immediately acknowledge the game end request
+			// This allows frontend to stop timers and show loading state immediately
+			this.emitToGame(gameId, ServerToClientSocketEvents.GAME_END_ACK, {
+				gameId,
+				userId,
+				reason,
+				message: "Processing game end...",
+			});
+
+			// ASYNC PROCESSING: Handle the actual game ending with smart contract transaction
+			// This runs asynchronously and will emit GAME_ENDED when complete
+			setImmediate(async () => {
+				await handleGameEnd(this.io, gameId, userId, reason);
+			});
 		}
 	}
 }

@@ -28,10 +28,11 @@ export enum ServerToClientSocketEvents {
 	PARTICIPANT_JOINED = "participant_joined", // 6. participant joined
 	MOVE_PIECE_ACK = "move_piece_ack", // 7. move piece acknowledged
 	MOVE_PIECE_ERROR = "move_piece_error", // 7.b move piece error
-	ACCEPT_GAME_END = "accept_game_end", // 8. accept game end (ask other player to accept draw)
-	GAME_ENDED = "game_ended", // 9. game ended (either via resign or draw request accepted)
-	GAME_DELETED = "game_deleted", // 10. game deleted by creator
-	RESUME_GAME = "resume_game", // 11. resume game (after draw request rejected)
+	ACCEPT_GAME_END = "accept_game_end", // 8. end game: participant accept or reject game end request
+	GAME_END_ACK = "game_end_ack", // 8.a end game: immediate acknowledgment for game end request
+	GAME_ENDED = "game_ended", // 8.b end game: final game ended event with complete data
+	GAME_DELETED = "game_deleted", // 8.c game deleted
+	RESUME_GAME = "resume_game", // 8.d resume game (draw rejected)
 	// extra
 	MESSAGE_SENT_ACK = "message_sent_ack", // 12. message sent acknowledged
 	SPECTATOR_JOIN_ACK = "spectator_join_ack", // 13. spectator join acknowledged

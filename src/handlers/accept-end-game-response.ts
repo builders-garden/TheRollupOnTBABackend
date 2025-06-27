@@ -59,9 +59,18 @@ export class AcceptGameEndResponseHandler extends SocketHandler {
 						: GameEndReason.WHITE_REQUESTED_DRAW;
 			}
 
-			// Use centralized game end handler for draw acceptance
-			// This will stop timers, update database, and emit events
-			await handleGameEnd(this.io, gameId, userId, gameEndReason);
+			// INSTANT RESPONSE: Immediately acknowledge the draw acceptance
+			this.emitToGame(gameId, ServerToClientSocketEvents.GAME_END_ACK, {
+				gameId,
+				userId,
+				reason: gameEndReason,
+				message: "Draw accepted, processing...",
+			});
+
+			// ASYNC PROCESSING: Handle the actual game ending with smart contract transaction
+			setImmediate(async () => {
+				await handleGameEnd(this.io, gameId, userId, gameEndReason);
+			});
 		} else {
 			// Draw rejected - resume the game
 			await updateGame(gameId, {
