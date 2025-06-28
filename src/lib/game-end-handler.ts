@@ -130,11 +130,13 @@ export async function handleGameEnd(
 		const payoutInfo = await calculatePayoutInfo(game, gameResult);
 
 		// update ratings
+		const gameWage = Number.parseFloat(game.wageAmount);
 		await updateRatings({
 			gameId,
 			whiteUser,
 			blackUser,
 			gameResult,
+			gameWage,
 		});
 
 		// 5. Finalize game on smart contract (if contract ID exists)
