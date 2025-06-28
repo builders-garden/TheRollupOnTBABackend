@@ -1,6 +1,7 @@
 import { GameResult } from "@prisma/client";
 import type { GameParticipant } from "../../types/database";
 import { bulkUpdateUserStatistics } from "../prisma/queries/user-statistics";
+import { calculateParticipantStats } from "../utils";
 import { calculateEloRating } from "./elo";
 
 export const calculateRatingChanges = async ({
@@ -54,11 +55,13 @@ export const updateRatings = async ({
 	whiteUser,
 	blackUser,
 	gameResult,
+	gameWage,
 }: {
 	gameId: string;
 	whiteUser: GameParticipant;
 	blackUser: GameParticipant;
 	gameResult: GameResult;
+	gameWage: number;
 }) => {
 	if (!whiteUser.user?.statistics || !blackUser.user?.statistics) {
 		console.error(
@@ -81,15 +84,28 @@ export const updateRatings = async ({
 		outcomeScore,
 	});
 
+	const { whiteStats, blackStats } = calculateParticipantStats(
+		whiteUser.user.statistics,
+		blackUser.user.statistics,
+		gameResult,
+		gameWage,
+	);
+
 	// update user statistics
 	await bulkUpdateUserStatistics([
 		{
 			userId: whiteUser.user.id,
-			data: { eloRating: newWhiteEloRating },
+			data: {
+				...whiteStats,
+				eloRating: newWhiteEloRating,
+			},
 		},
 		{
 			userId: blackUser.user.id,
-			data: { eloRating: newBlackEloRating },
+			data: {
+				...blackStats,
+				eloRating: newBlackEloRating,
+			},
 		},
 	]);
 
