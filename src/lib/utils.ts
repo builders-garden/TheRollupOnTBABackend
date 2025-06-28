@@ -32,10 +32,17 @@ export const getGameOptionTime = (mode: GameMode, option: GameOption) => {
   }
 };
 
-export const getGameEndReason = (
+/**
+ * Get game result and explanation
+ * @param reason - Game end reason
+ * @param whiteParticipantUsername - White participant username
+ * @param blackParticipantUsername - Black participant username
+ * @returns Object containing game result and explanation
+ */
+export const getGameResultExplained = (
   reason: GameEndReason,
-  whiteParticipantUsername: string,
-  blackParticipantUsername: string
+  whiteParticipantUsername?: string,
+  blackParticipantUsername?: string
 ): {
   gameResult: GameResult;
   gameResultExplanation: string;
