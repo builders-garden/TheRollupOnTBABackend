@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "yarn"]
+nixPkgs = ["nodejs_20"]
 
 [variables]
 NODE_VERSION = "20.18.1"
