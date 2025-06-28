@@ -23,6 +23,12 @@
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
+	"engines": {
+		"node": ">=20.18.0"
+	},
+	"resolutions": {
+		"vite": "^5.4.11"
+	},
 	"dependencies": {
 		"@libsql/client": "^0.15.8",
 		"@prisma/adapter-libsql": "^6.9.0",
@@ -60,6 +66,6 @@
 		"ts-jest": "^29.4.0",
 		"ts-node": "^10.9.2",
 		"typescript": "^5.8.3",
-		"ultracite": "^5.0.25"
+		"ultracite": "^5.0.26"
 	}
 }
