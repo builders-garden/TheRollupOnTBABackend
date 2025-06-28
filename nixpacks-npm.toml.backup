@@ -1,0 +1,17 @@
+# Use this file if yarn fails on Railway
+# Rename to nixpacks.toml to use npm instead
+
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build] 
+cmds = ["npm run build"]
+
+[start]
+cmd = "npm start"
+
+[variables]
+NODE_VERSION = "20.18.1"
