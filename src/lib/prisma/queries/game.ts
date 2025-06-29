@@ -12,29 +12,69 @@ import { prisma } from "../client";
  * @returns The game if found, otherwise null
  */
 export function getGameById(gameId: string) {
-	return prisma.game.findUnique({
-		where: { id: gameId },
-		include: {
-			creator: {
-				include: {
-					user: {
-						include: {
-							statistics: true,
-						},
-					},
-				},
-			},
-			opponent: {
-				include: {
-					user: {
-						include: {
-							statistics: true,
-						},
-					},
-				},
-			},
-		},
-	});
+  return prisma.game.findUnique({
+    where: { id: gameId },
+    include: {
+      creator: {
+        include: {
+          user: {
+            include: {
+              statistics: true,
+            },
+          },
+        },
+      },
+      opponent: {
+        include: {
+          user: {
+            include: {
+              statistics: true,
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+/**
+ * Get a game by its id.
+ *
+ * This function gets a game by its id.
+ * It takes a game id and returns the game if found.
+ *
+ * @param gameId - The id of the game to get
+ * @returns The game if found with spectators, otherwise null
+ */
+export function getGameByIdWithSpectators(gameId: string) {
+  return prisma.game.findUnique({
+    where: { id: gameId },
+    include: {
+      creator: {
+        include: {
+          user: {
+            include: {
+              statistics: true,
+            },
+          },
+        },
+      },
+      opponent: {
+        include: {
+          user: {
+            include: {
+              statistics: true,
+            },
+          },
+        },
+      },
+      spectators: {
+        include: {
+          user: true,
+        },
+      },
+    },
+  });
 }
 
 /**
@@ -48,10 +88,10 @@ export function getGameById(gameId: string) {
  * @returns The updated game
  */
 export function updateGame(gameId: string, game: Prisma.GameUpdateInput) {
-	return prisma.game.update({
-		where: { id: gameId },
-		data: game,
-	});
+  return prisma.game.update({
+    where: { id: gameId },
+    data: game,
+  });
 }
 
 /**
@@ -67,31 +107,31 @@ export function updateGame(gameId: string, game: Prisma.GameUpdateInput) {
  * @returns The updated game
  */
 export function updateGameWithMove(
-	gameId: string,
-	userId: string,
-	newFen: string,
-	move: Move,
+  gameId: string,
+  userId: string,
+  newFen: string,
+  move: Move
 ) {
-	return prisma.game.update({
-		where: { id: gameId },
-		data: {
-			currentFen: newFen,
-			moves: {
-				create: [
-					{
-						userId,
-						move: JSON.stringify(move),
-						fen: newFen,
-						san: move.san,
-						lan: move.lan,
-					},
-				],
-			},
-			totalMoves: {
-				increment: 1,
-			},
-		},
-	});
+  return prisma.game.update({
+    where: { id: gameId },
+    data: {
+      currentFen: newFen,
+      moves: {
+        create: [
+          {
+            userId,
+            move: JSON.stringify(move),
+            fen: newFen,
+            san: move.san,
+            lan: move.lan,
+          },
+        ],
+      },
+      totalMoves: {
+        increment: 1,
+      },
+    },
+  });
 }
 
 /**
@@ -103,19 +143,19 @@ export function updateGameWithMove(
  * @returns The updated game if successful, null if game was already ended
  */
 export async function endGameIfNotEnded(
-	gameId: string,
-	game: Prisma.GameUpdateInput,
+  gameId: string,
+  game: Prisma.GameUpdateInput
 ) {
-	try {
-		return await prisma.game.updateMany({
-			where: {
-				id: gameId,
-				gameState: { not: "ENDED" }, // Only update if not already ended
-			},
-			data: game,
-		});
-	} catch (error) {
-		console.error(`[DB] Error conditionally ending game ${gameId}:`, error);
-		throw error;
-	}
+  try {
+    return await prisma.game.updateMany({
+      where: {
+        id: gameId,
+        gameState: { not: "ENDED" }, // Only update if not already ended
+      },
+      data: game,
+    });
+  } catch (error) {
+    console.error(`[DB] Error conditionally ending game ${gameId}:`, error);
+    throw error;
+  }
 }

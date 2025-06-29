@@ -8,18 +8,19 @@ import morganLogger from "morgan";
 import { Server as SocketIOServer } from "socket.io";
 import { env } from "./config/env";
 import {
-	AcceptGameEndResponseHandler,
-	DeleteGameHandler,
-	DisconnectParticipantHandler,
-	EndGameHandler,
-	GameChatMessagesHandler,
-	JoinGameHandler,
-	JoinMatchmakingQueueHandler,
-	LeaveMatchmakingQueueHandler,
-	MovePieceHandler,
-	ParticipantNotReadyHandler,
-	ParticipantReadyHandler,
-	PaymentConfirmedHandler,
+  AcceptGameEndResponseHandler,
+  DeleteGameHandler,
+  DisconnectParticipantHandler,
+  EndGameHandler,
+  GameChatMessagesHandler,
+  JoinGameHandler,
+  JoinMatchmakingQueueHandler,
+  LeaveMatchmakingQueueHandler,
+  MovePieceHandler,
+  ParticipantNotReadyHandler,
+  ParticipantReadyHandler,
+  PaymentConfirmedHandler,
+  SpectatorJoinHandler,
 } from "./handlers";
 import { baseOrigins, localOrigins } from "./lib/cors";
 import { handleTimerExpiration } from "./lib/game-end-handler";
@@ -30,21 +31,22 @@ import { ChessTimerManager } from "./lib/timer-manager";
 import { handleError, handleNotFound } from "./middleware/error.middleware";
 import responseMiddleware from "./middleware/response";
 import type {
-	AcceptGameEndResponseEvent,
-	DeleteGameRequestEvent,
-	EndGameRequestEvent,
-	JoinGameRequestEvent,
-	JoinMatchmakingQueueEvent,
-	LeaveMatchmakingQueueEvent,
-	MessageSentEvent,
-	MovePieceEvent,
-	ParticipantNotReadyEvent,
-	ParticipantReadyEvent,
-	PaymentConfirmedEvent,
+  AcceptGameEndResponseEvent,
+  DeleteGameRequestEvent,
+  EndGameRequestEvent,
+  JoinGameRequestEvent,
+  JoinMatchmakingQueueEvent,
+  LeaveMatchmakingQueueEvent,
+  MessageSentEvent,
+  MovePieceEvent,
+  ParticipantNotReadyEvent,
+  ParticipantReadyEvent,
+  PaymentConfirmedEvent,
+  SpectatorJoinEvent,
 } from "./types";
 import {
-	ClientToServerSocketEvents,
-	ServerToClientSocketEvents,
+  ClientToServerSocketEvents,
+  ServerToClientSocketEvents,
 } from "./types/enums";
 
 // Load environment variables
@@ -53,17 +55,17 @@ dotenv.config();
 const app = express();
 
 const allowedOrigins =
-	env.NODE_ENV === "development"
-		? [...baseOrigins, ...localOrigins]
-		: baseOrigins;
+  env.NODE_ENV === "development"
+    ? [...baseOrigins, ...localOrigins]
+    : baseOrigins;
 
 // Middleware
 app.use(
-	cors({
-		origin: allowedOrigins,
-		credentials: true,
-		methods: ["GET", "POST", "OPTIONS"],
-	}),
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ["GET", "POST", "OPTIONS"],
+  })
 );
 app.use(cookieParserMiddleware());
 app.use(express.json());
@@ -76,11 +78,11 @@ const httpServer = http.createServer(app);
 
 // Initialize Socket.IO server
 const io = new SocketIOServer(httpServer, {
-	cors: {
-		origin: allowedOrigins,
-		// credentials: true,
-		methods: ["GET", "POST", "OPTIONS"],
-	},
+  cors: {
+    origin: allowedOrigins,
+    // credentials: true,
+    methods: ["GET", "POST", "OPTIONS"],
+  },
 });
 
 // Set the Socket.IO instance
@@ -91,20 +93,20 @@ const chessTimerManager = ChessTimerManager.getInstance();
 
 // Set up timer callbacks
 chessTimerManager.setOnTimerUpdate((gameId, timer) => {
-	io.to(gameId).emit(ServerToClientSocketEvents.TIMER_UPDATE, {
-		gameId,
-		whiteTimeLeft: timer.whiteTimeLeft,
-		blackTimeLeft: timer.blackTimeLeft,
-		activeColor: timer.activeColor,
-		lastMoveAt: timer.lastMoveAt || Date.now(),
-	});
+  io.to(gameId).emit(ServerToClientSocketEvents.TIMER_UPDATE, {
+    gameId,
+    whiteTimeLeft: timer.whiteTimeLeft,
+    blackTimeLeft: timer.blackTimeLeft,
+    activeColor: timer.activeColor,
+    lastMoveAt: timer.lastMoveAt || Date.now(),
+  });
 });
 
 chessTimerManager.setOnTimerExpired(async (gameId, color) => {
-	console.log(
-		`[TIMER EXPIRED] Processing timeout for ${color} in game ${gameId}`,
-	);
-	await handleTimerExpiration(io, gameId, color);
+  console.log(
+    `[TIMER EXPIRED] Processing timeout for ${color} in game ${gameId}`
+  );
+  await handleTimerExpiration(io, gameId, color);
 });
 
 // Recover active timers from database on startup
@@ -113,139 +115,149 @@ recoverActiveTimers();
 // Start the weekly rating update scheduler
 ratingScheduler.startScheduler();
 console.log(
-	`[APP] Rating scheduler started. Next update: ${ratingScheduler
-		.getNextRun()
-		?.toISOString()}`,
+  `[APP] Rating scheduler started. Next update: ${ratingScheduler
+    .getNextRun()
+    ?.toISOString()}`
 );
 
 // Socket.IO connection logic
 io.on("connection", (socket) => {
-	console.log("0. client connected:", socket.id);
+  console.log("0. client connected:", socket.id);
 
-	// 1. Game creation request (done on nextjs backend)
+  // 1. Game creation request (done on nextjs backend)
 
-	// 2. Game joining request
-	socket.on(
-		ClientToServerSocketEvents.JOIN_GAME_REQUEST,
-		async (data: JoinGameRequestEvent) => {
-			console.log("joining chess game:", data);
-			const handler = new JoinGameHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
+  // 2. Game joining request
+  socket.on(
+    ClientToServerSocketEvents.JOIN_GAME_REQUEST,
+    async (data: JoinGameRequestEvent) => {
+      console.log("joining chess game:", data);
+      const handler = new JoinGameHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
 
-	// 2.b Payment Confirmed
-	socket.on(
-		ClientToServerSocketEvents.PAYMENT_CONFIRMED,
-		async (data: PaymentConfirmedEvent) => {
-			console.log("payment confirmed:", data);
-			const handler = new PaymentConfirmedHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
+  // 2.b Payment Confirmed
+  socket.on(
+    ClientToServerSocketEvents.PAYMENT_CONFIRMED,
+    async (data: PaymentConfirmedEvent) => {
+      console.log("payment confirmed:", data);
+      const handler = new PaymentConfirmedHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
 
-	// 3. Game starting - Participant ready request
-	socket.on(
-		ClientToServerSocketEvents.PARTICIPANT_READY,
-		async (data: ParticipantReadyEvent) => {
-			console.log("participant ready:", data);
-			const handler = new ParticipantReadyHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
+  // 3. Game starting - Participant ready request
+  socket.on(
+    ClientToServerSocketEvents.PARTICIPANT_READY,
+    async (data: ParticipantReadyEvent) => {
+      console.log("participant ready:", data);
+      const handler = new ParticipantReadyHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
 
-	// 3.b Game starting - Participant not ready request (revoke ready state)
-	socket.on(
-		ClientToServerSocketEvents.PARTICIPANT_NOT_READY,
-		async (data: ParticipantNotReadyEvent) => {
-			console.log("participant not ready:", data);
-			const handler = new ParticipantNotReadyHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
+  // 3.b Game starting - Participant not ready request (revoke ready state)
+  socket.on(
+    ClientToServerSocketEvents.PARTICIPANT_NOT_READY,
+    async (data: ParticipantNotReadyEvent) => {
+      console.log("participant not ready:", data);
+      const handler = new ParticipantNotReadyHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
 
-	// 4. Start Game is a server to client event ==> no need to handle it here
+  // 4. Start Game is a server to client event ==> no need to handle it here
 
-	// 5. Game playing - Move piece event
-	socket.on(
-		ClientToServerSocketEvents.MOVE_PIECE,
-		async (data: MovePieceEvent) => {
-			console.log("move piece:", data);
-			const handler = new MovePieceHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
+  // 5. Game playing - Move piece event
+  socket.on(
+    ClientToServerSocketEvents.MOVE_PIECE,
+    async (data: MovePieceEvent) => {
+      console.log("move piece:", data);
+      const handler = new MovePieceHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
 
-	// 6. Game ending - End game request for both resign or draw
-	socket.on(
-		ClientToServerSocketEvents.END_GAME_REQUEST,
-		async (data: EndGameRequestEvent) => {
-			console.log("end game:", data);
-			const handler = new EndGameHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
+  // 6. Game ending - End game request for both resign or draw
+  socket.on(
+    ClientToServerSocketEvents.END_GAME_REQUEST,
+    async (data: EndGameRequestEvent) => {
+      console.log("end game:", data);
+      const handler = new EndGameHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
 
-	// 6.b Game ending - Accept game end response (a client can accept or reject the request to draw)
-	socket.on(
-		ClientToServerSocketEvents.ACCEPT_GAME_END_RESPONSE,
-		async (data: AcceptGameEndResponseEvent) => {
-			console.log("accept game end response:", data);
-			const handler = new AcceptGameEndResponseHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
+  // 6.b Game ending - Accept game end response (a client can accept or reject the request to draw)
+  socket.on(
+    ClientToServerSocketEvents.ACCEPT_GAME_END_RESPONSE,
+    async (data: AcceptGameEndResponseEvent) => {
+      console.log("accept game end response:", data);
+      const handler = new AcceptGameEndResponseHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
 
-	// 7. Game deletion - Delete game request (creator only)
-	socket.on(
-		ClientToServerSocketEvents.DELETE_GAME_REQUEST,
-		async (data: DeleteGameRequestEvent) => {
-			console.log("delete game:", data);
-			const handler = new DeleteGameHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
+  // 7. Game deletion - Delete game request (creator only)
+  socket.on(
+    ClientToServerSocketEvents.DELETE_GAME_REQUEST,
+    async (data: DeleteGameRequestEvent) => {
+      console.log("delete game:", data);
+      const handler = new DeleteGameHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
 
-	// Send message request
-	socket.on(
-		ClientToServerSocketEvents.MESSAGE_SENT,
-		async (data: MessageSentEvent) => {
-			console.log("send message:", data);
-			const handler = new GameChatMessagesHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
+  // Send message request
+  socket.on(
+    ClientToServerSocketEvents.MESSAGE_SENT,
+    async (data: MessageSentEvent) => {
+      console.log("send message:", data);
+      const handler = new GameChatMessagesHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
 
-	// Matchmaking events
-	socket.on(
-		ClientToServerSocketEvents.JOIN_MATCHMAKING_QUEUE,
-		async (data: JoinMatchmakingQueueEvent) => {
-			console.log("join matchmaking queue:", data);
-			const handler = new JoinMatchmakingQueueHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
+  // spectator join
+  socket.on(
+    ClientToServerSocketEvents.SPECTATOR_JOIN,
+    async (data: SpectatorJoinEvent) => {
+      console.log("spectator join:", data);
+      const handler = new SpectatorJoinHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
 
-	socket.on(
-		ClientToServerSocketEvents.LEAVE_MATCHMAKING_QUEUE,
-		async (data: LeaveMatchmakingQueueEvent) => {
-			console.log("leave matchmaking queue:", data);
-			const handler = new LeaveMatchmakingQueueHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
+  // Matchmaking events
+  socket.on(
+    ClientToServerSocketEvents.JOIN_MATCHMAKING_QUEUE,
+    async (data: JoinMatchmakingQueueEvent) => {
+      console.log("join matchmaking queue:", data);
+      const handler = new JoinMatchmakingQueueHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
 
-	// disconnect
-	socket.on("disconnect", async () => {
-		console.log("user disconnected:", socket.id);
-		const handler = new DisconnectParticipantHandler(socket, io);
-		await handler.handle();
-	});
+  socket.on(
+    ClientToServerSocketEvents.LEAVE_MATCHMAKING_QUEUE,
+    async (data: LeaveMatchmakingQueueEvent) => {
+      console.log("leave matchmaking queue:", data);
+      const handler = new LeaveMatchmakingQueueHandler(socket, io);
+      await handler.handle(data);
+    }
+  );
+
+  // disconnect
+  socket.on("disconnect", async () => {
+    console.log("user disconnected:", socket.id);
+    const handler = new DisconnectParticipantHandler(socket, io);
+    await handler.handle();
+  });
 });
 
 // Health check route (unprotected)
 app.get("/health", (_req, res) => {
-	res.json({ status: "ok" });
+  res.json({ status: "ok" });
 });
 
 // Use custom middlewares for handling 404 and errors
@@ -255,24 +267,24 @@ app.use(handleError);
 // Start HTTP server (not app.listen anymore)
 const port = env.PORT;
 httpServer.listen(port, () => {
-	console.log(`🚀 Server with WS enabled is running on port ${port}`);
+  console.log(`🚀 Server with WS enabled is running on port ${port}`);
 });
 
 // Cleanup on server shutdown
 process.on("SIGINT", () => {
-	console.log("Shutting down server...");
-	chessTimerManager.stopAllTimers();
-	chessTimerManager.cleanup();
-	ratingScheduler.stopScheduler();
-	httpServer.close();
-	process.exit(0);
+  console.log("Shutting down server...");
+  chessTimerManager.stopAllTimers();
+  chessTimerManager.cleanup();
+  ratingScheduler.stopScheduler();
+  httpServer.close();
+  process.exit(0);
 });
 
 process.on("SIGTERM", () => {
-	console.log("Shutting down server...");
-	chessTimerManager.stopAllTimers();
-	chessTimerManager.cleanup();
-	ratingScheduler.stopScheduler();
-	httpServer.close();
-	process.exit(0);
+  console.log("Shutting down server...");
+  chessTimerManager.stopAllTimers();
+  chessTimerManager.cleanup();
+  ratingScheduler.stopScheduler();
+  httpServer.close();
+  process.exit(0);
 });
