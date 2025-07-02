@@ -32,10 +32,17 @@ export const getGameOptionTime = (mode: GameMode, option: GameOption) => {
   }
 };
 
-export const getGameEndReason = (
+/**
+ * Get game result and explanation
+ * @param reason - Game end reason
+ * @param whiteParticipantUsername - White participant username
+ * @param blackParticipantUsername - Black participant username
+ * @returns Object containing game result and explanation
+ */
+export const getGameResultExplained = (
   reason: GameEndReason,
-  whiteParticipantUsername: string,
-  blackParticipantUsername: string
+  whiteParticipantUsername?: string,
+  blackParticipantUsername?: string
 ): {
   gameResult: GameResult;
   gameResultExplanation: string;
@@ -169,8 +176,8 @@ export const calculateParticipantStats = (
   let blackAverageWageInUSDC = blackStats.averageWageInUSDC;
   let whiteTotalProfitAndLossInUSDC = whiteStats.totalProfitAndLossInUSDC;
   let blackTotalProfitAndLossInUSDC = blackStats.totalProfitAndLossInUSDC;
-  let whiteRoi = whiteStats.roi;
-  let blackRoi = blackStats.roi;
+  let whiteRoi = whiteStats.roi ?? 0;
+  let blackRoi = blackStats.roi ?? 0;
 
   // update elo k-factor according to fide [32] https://en.wikipedia.org/wiki/Elo_rating_system
   let whiteEloKFactor = whiteStats.eloKFactor;
@@ -211,8 +218,14 @@ export const calculateParticipantStats = (
       // update roi
       whiteTotalProfitAndLossInUSDC += gameWage; // TODO subtract fee
       blackTotalProfitAndLossInUSDC -= gameWage; // TODO subtract fee
-      whiteRoi = whiteTotalProfitAndLossInUSDC / whiteWageVolumeInUSDC;
-      blackRoi = blackTotalProfitAndLossInUSDC / blackWageVolumeInUSDC;
+      whiteRoi =
+        whiteWageVolumeInUSDC > 0
+          ? whiteTotalProfitAndLossInUSDC / whiteWageVolumeInUSDC
+          : 0;
+      blackRoi =
+        blackWageVolumeInUSDC > 0
+          ? blackTotalProfitAndLossInUSDC / blackWageVolumeInUSDC
+          : 0;
       break;
     case GameResult.DRAW:
       whiteGamesDrawn += 1;

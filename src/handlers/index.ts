@@ -12,3 +12,4 @@ export * from "./participant-ready";
 export * from "./payment-confirmed";
 export * from "./reset-game";
 export * from "./socket-handler";
+export * from "./spectator-join";
