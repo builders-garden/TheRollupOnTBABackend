@@ -250,6 +250,18 @@ export type QueueLeftEvent = {
   success: boolean;
 };
 
+// 19. In-App Notifications
+export type InAppNotificationEvent = {
+  id: string;
+  type: "info" | "success" | "warning" | "error";
+  title: string;
+  message: string;
+  timestamp: number;
+  duration?: number; // Optional duration in milliseconds (default: 5000)
+  actionUrl?: string; // Optional URL for click action
+  metadata?: Record<string, any>; // Optional additional data
+};
+
 export type ServerToClientEvents = {
   [ServerToClientSocketEvents.JOIN_GAME_RESPONSE]: JoinGameResponseEvent;
   [ServerToClientSocketEvents.PAYMENT_CONFIRMED_ACK]: PaymentConfirmedAckEvent;
@@ -272,6 +284,7 @@ export type ServerToClientEvents = {
   [ServerToClientSocketEvents.MATCH_FOUND]: MatchFoundEvent;
   [ServerToClientSocketEvents.QUEUE_JOINED]: QueueJoinedEvent;
   [ServerToClientSocketEvents.QUEUE_LEFT]: QueueLeftEvent;
+  [ServerToClientSocketEvents.IN_APP_NOTIFICATION]: InAppNotificationEvent;
   [ServerToClientSocketEvents.ERROR]: ErrorEvent;
   [ServerToClientSocketEvents.BANNED]: BannedEvent;
   [ServerToClientSocketEvents.RESET_GAME]: ResetGameEvent;
