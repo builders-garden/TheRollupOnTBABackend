@@ -10,9 +10,9 @@ import { prisma } from "../client";
  * @returns All spectators for the game
  */
 export const getGameSpectators = async (gameId: string) => {
-  return prisma.gameSpectator.findMany({
-    where: { gameId },
-  });
+	return prisma.gameSpectator.findMany({
+		where: { gameId },
+	});
 };
 
 /**
@@ -26,13 +26,13 @@ export const getGameSpectators = async (gameId: string) => {
  * @returns The added spectator
  */
 export const addGameSpectator = async (gameId: string, userId: string) => {
-  return prisma.gameSpectator.create({
-    data: {
-      gameId,
-      userId,
-    },
-    include: {
-      user: true,
-    },
-  });
+	return prisma.gameSpectator.create({
+		data: {
+			gameId,
+			userId,
+		},
+		include: {
+			user: true,
+		},
+	});
 };
