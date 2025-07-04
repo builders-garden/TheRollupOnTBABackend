@@ -10,6 +10,5 @@ export * from "./move-piece";
 export * from "./participant-not-ready";
 export * from "./participant-ready";
 export * from "./payment-confirmed";
-export * from "./reset-game";
 export * from "./socket-handler";
 export * from "./spectator-join";
