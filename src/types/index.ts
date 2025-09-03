@@ -2,27 +2,28 @@ import type { Address, Hex } from "viem";
 
 export * from "./socket";
 
-export type Participant = {
-	socketId: string;
-	participantFid: number;
-	participantUsername: string;
-	avatarUrl: string;
-	ready: boolean;
-	score: number;
-	isCreator?: boolean;
-};
+export type Event = {
+	walletAddress: Address;
+	username: string;
+	profilePicture: string;
+}
 
-export type Payment = {
+export type Tip = Event & {
 	amount: string;
 	amountUSDC: string;
 	currencyAddress: Address;
+	txHash: Hex;
+};
+
+export type Vote = Event & {
+	promptId: string;
+	isBull: boolean;
 	walletAddress: Address;
 	txHash: Hex;
 };
 
-export type GameOptionDetails = {
-	label: string;
-	value: string;
-	duration: number; // in seconds
-	increase: number; // in seconds
+export type TokenTrade = {
+	tokenAddress: Address;
+	tokenAmount: string;
+	txHash: Hex;
 };

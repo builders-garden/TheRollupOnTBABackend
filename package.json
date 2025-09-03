@@ -11,11 +11,7 @@
 		"typecheck": "tsc --noEmit",
 		"check": "biome check --write .",
 		"format": "npx @biomejs/biome format --write ./src",
-		"prisma:generate": "prisma generate",
-		"prisma:migrate": "prisma migrate dev",
-		"postinstall": "prisma generate",
-		"test": "jest",
-		"rating:update": "ts-node src/scripts/manual-rating-update.ts"
+		"test": "jest"
 	},
 	"lint-staged": {
 		"*.ts": "npm run format && npm run typecheck"
@@ -24,17 +20,11 @@
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
-		"@libsql/client": "^0.15.8",
-		"@prisma/adapter-libsql": "^6.9.0",
-		"@prisma/client": "^6.9.0",
 		"@t3-oss/env-core": "^0.13.6",
-		"chess.js": "^1.2.0",
 		"cookie-parser": "^1.4.7",
 		"cors": "^2.8.5",
 		"dotenv": "^16.5.0",
 		"express": "^5.1.0",
-		"glicko-ts": "^1.0.3",
-		"glicko2": "^1.2.1",
 		"helmet": "^8.1.0",
 		"morgan": "^1.10.0",
 		"node-cron": "^3.0.3",
@@ -56,7 +46,6 @@
 		"@types/socket.io": "^3.0.2",
 		"jest": "^30.0.3",
 		"nodemon": "^3.1.10",
-		"prisma": "^6.8.2",
 		"ts-jest": "^29.4.0",
 		"ts-node": "^10.9.2",
 		"typescript": "^5.8.3",
