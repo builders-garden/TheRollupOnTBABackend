@@ -7,6 +7,9 @@ export class JoinStreamHandler extends SocketHandler {
 		try {
 			this.joinStream();
 			console.log(`[JOIN STREAM] ${username} joined the stream`);
+			if (username === "Overlay") {
+				return;
+			}
 			this.emitToStream(ServerToClientSocketEvents.STREAM_JOINED, {
                 username,
                 profilePicture,
