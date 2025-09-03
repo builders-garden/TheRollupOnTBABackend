@@ -13,27 +13,14 @@ const envSchema = z.object({
 		.enum(["development", "production", "test"])
 		.default("development"),
 
-	// Database
-	LIBSQL_DATABASE_URL: z.string().min(1),
-	LIBSQL_DATABASE_TOKEN: z.string().min(1),
-
-	// Neynar
-	NEYNAR_API_KEY: z.string().min(1),
-
 	// Application
 	APP_URL: z.string().url().optional().default("https://checkmat.es"),
 
 	// API Security
-	API_SECRET_KEY: z.string().min(1),
-
-	// Daimo Pay
-	DAIMO_PAY_API_KEY: z.string().min(1),
+	API_SECRET_KEY: z.string().optional(),
 
 	// Smart Contract
-	BACKEND_PRIVATE_KEY: z.string().min(1),
-
-	// Stockfish secret key
-	STOCKFISH_SECRET_KEY: z.string().min(1),
+	BACKEND_PRIVATE_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

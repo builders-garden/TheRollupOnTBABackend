@@ -1,52 +1,30 @@
-import http from "node:http";
 import cookieParserMiddleware from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import helmet from "helmet";
 import morganLogger from "morgan";
+import http from "node:http";
 import { Server as SocketIOServer } from "socket.io";
 import { env } from "./config/env";
 import {
-	AcceptGameEndResponseHandler,
-	DeleteGameHandler,
-	DisconnectParticipantHandler,
-	EndGameHandler,
-	GameChatMessagesHandler,
-	JoinGameHandler,
-	JoinMatchmakingQueueHandler,
-	LeaveMatchmakingQueueHandler,
-	MovePieceHandler,
-	ParticipantNotReadyHandler,
-	ParticipantReadyHandler,
-	PaymentConfirmedHandler,
-	SpectatorJoinHandler,
+	JoinStreamHandler,
+	TipSentHandler,
+	TokenTradedHandler,
+	VoteCastedHandler,
 } from "./handlers";
 import { baseOrigins, localOrigins } from "./lib/cors";
-import { handleTimerExpiration } from "./lib/game-end-handler";
-import { recoverActiveTimers } from "./lib/prisma/queries/timer-persistence";
-import { ratingScheduler } from "./lib/rating-scheduler";
 import { setIOInstance } from "./lib/socket";
-import { ChessTimerManager } from "./lib/timer-manager";
 import { handleError, handleNotFound } from "./middleware/error.middleware";
 import responseMiddleware from "./middleware/response";
 import type {
-	AcceptGameEndResponseEvent,
-	DeleteGameRequestEvent,
-	EndGameRequestEvent,
-	JoinGameRequestEvent,
-	JoinMatchmakingQueueEvent,
-	LeaveMatchmakingQueueEvent,
-	MessageSentEvent,
-	MovePieceEvent,
-	ParticipantNotReadyEvent,
-	ParticipantReadyEvent,
-	PaymentConfirmedEvent,
-	SpectatorJoinEvent,
+	JoinStreamEvent,
+	TipSentEvent,
+	TokenTradedEvent,
+	VoteCastedEvent
 } from "./types";
 import {
 	ClientToServerSocketEvents,
-	ServerToClientSocketEvents,
 } from "./types/enums";
 
 // Load environment variables
@@ -88,170 +66,45 @@ const io = new SocketIOServer(httpServer, {
 // Set the Socket.IO instance
 setIOInstance(io);
 
-// Initialize timer manager
-const chessTimerManager = ChessTimerManager.getInstance();
-
-// Set up timer callbacks
-chessTimerManager.setOnTimerUpdate((gameId, timer) => {
-	io.to(gameId).emit(ServerToClientSocketEvents.TIMER_UPDATE, {
-		gameId,
-		whiteTimeLeft: timer.whiteTimeLeft,
-		blackTimeLeft: timer.blackTimeLeft,
-		activeColor: timer.activeColor,
-		lastMoveAt: timer.lastMoveAt || Date.now(),
-	});
-});
-
-chessTimerManager.setOnTimerExpired(async (gameId, color) => {
-	console.log(
-		`[TIMER EXPIRED] Processing timeout for ${color} in game ${gameId}`,
-	);
-	await handleTimerExpiration(io, gameId, color);
-});
-
-// Recover active timers from database on startup
-recoverActiveTimers();
-
-// Start the weekly rating update scheduler
-ratingScheduler.startScheduler();
-console.log(
-	`[APP] Rating scheduler started. Next update: ${ratingScheduler
-		.getNextRun()
-		?.toISOString()}`,
-);
-
 // Socket.IO connection logic
 io.on("connection", (socket) => {
 	console.log("0. client connected:", socket.id);
 
-	// 1. Game creation request (done on nextjs backend)
-
-	// 2. Game joining request
 	socket.on(
-		ClientToServerSocketEvents.JOIN_GAME_REQUEST,
-		async (data: JoinGameRequestEvent) => {
-			console.log("joining chess game:", data);
-			const handler = new JoinGameHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
-
-	// 2.b Payment Confirmed
-	socket.on(
-		ClientToServerSocketEvents.PAYMENT_CONFIRMED,
-		async (data: PaymentConfirmedEvent) => {
-			console.log("payment confirmed:", data);
-			const handler = new PaymentConfirmedHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
-
-	// 3. Game starting - Participant ready request
-	socket.on(
-		ClientToServerSocketEvents.PARTICIPANT_READY,
-		async (data: ParticipantReadyEvent) => {
-			console.log("participant ready:", data);
-			const handler = new ParticipantReadyHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
-
-	// 3.b Game starting - Participant not ready request (revoke ready state)
-	socket.on(
-		ClientToServerSocketEvents.PARTICIPANT_NOT_READY,
-		async (data: ParticipantNotReadyEvent) => {
-			console.log("participant not ready:", data);
-			const handler = new ParticipantNotReadyHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
-
-	// 4. Start Game is a server to client event ==> no need to handle it here
-
-	// 5. Game playing - Move piece event
-	socket.on(
-		ClientToServerSocketEvents.MOVE_PIECE,
-		async (data: MovePieceEvent) => {
-			console.log("move piece:", data);
-			const handler = new MovePieceHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
-
-	// 6. Game ending - End game request for both resign or draw
-	socket.on(
-		ClientToServerSocketEvents.END_GAME_REQUEST,
-		async (data: EndGameRequestEvent) => {
-			console.log("end game:", data);
-			const handler = new EndGameHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
-
-	// 6.b Game ending - Accept game end response (a client can accept or reject the request to draw)
-	socket.on(
-		ClientToServerSocketEvents.ACCEPT_GAME_END_RESPONSE,
-		async (data: AcceptGameEndResponseEvent) => {
-			console.log("accept game end response:", data);
-			const handler = new AcceptGameEndResponseHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
-
-	// 7. Game deletion - Delete game request (creator only)
-	socket.on(
-		ClientToServerSocketEvents.DELETE_GAME_REQUEST,
-		async (data: DeleteGameRequestEvent) => {
-			console.log("delete game:", data);
-			const handler = new DeleteGameHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
-
-	// Send message request
-	socket.on(
-		ClientToServerSocketEvents.MESSAGE_SENT,
-		async (data: MessageSentEvent) => {
-			console.log("send message:", data);
-			const handler = new GameChatMessagesHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
-
-	// spectator join
-	socket.on(
-		ClientToServerSocketEvents.SPECTATOR_JOIN,
-		async (data: SpectatorJoinEvent) => {
-			console.log("spectator join:", data);
-			const handler = new SpectatorJoinHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
-
-	// Matchmaking events
-	socket.on(
-		ClientToServerSocketEvents.JOIN_MATCHMAKING_QUEUE,
-		async (data: JoinMatchmakingQueueEvent) => {
-			console.log("join matchmaking queue:", data);
-			const handler = new JoinMatchmakingQueueHandler(socket, io);
+		ClientToServerSocketEvents.JOIN_STREAM,
+		async (data: JoinStreamEvent) => {
+			const handler = new JoinStreamHandler(socket, io);
 			await handler.handle(data);
 		},
 	);
 
 	socket.on(
-		ClientToServerSocketEvents.LEAVE_MATCHMAKING_QUEUE,
-		async (data: LeaveMatchmakingQueueEvent) => {
-			console.log("leave matchmaking queue:", data);
-			const handler = new LeaveMatchmakingQueueHandler(socket, io);
+		ClientToServerSocketEvents.TIP_SENT,
+		async (data: TipSentEvent) => {
+			const handler = new TipSentHandler(socket, io);
 			await handler.handle(data);
 		},
 	);
 
+	socket.on(
+		ClientToServerSocketEvents.TOKEN_TRADED,
+		async (data: TokenTradedEvent) => {
+			const handler = new TokenTradedHandler(socket, io);
+			await handler.handle(data);
+		},
+	);
+
+	socket.on(
+		ClientToServerSocketEvents.VOTE_CASTED,
+		async (data: VoteCastedEvent) => {
+			const handler = new VoteCastedHandler(socket, io);
+			await handler.handle(data);
+		},
+	);
+	
 	// disconnect
 	socket.on("disconnect", async () => {
 		console.log("user disconnected:", socket.id);
-		const handler = new DisconnectParticipantHandler(socket, io);
-		await handler.handle();
 	});
 });
 
@@ -273,18 +126,12 @@ httpServer.listen(port, () => {
 // Cleanup on server shutdown
 process.on("SIGINT", () => {
 	console.log("Shutting down server...");
-	chessTimerManager.stopAllTimers();
-	chessTimerManager.cleanup();
-	ratingScheduler.stopScheduler();
 	httpServer.close();
 	process.exit(0);
 });
 
 process.on("SIGTERM", () => {
 	console.log("Shutting down server...");
-	chessTimerManager.stopAllTimers();
-	chessTimerManager.cleanup();
-	ratingScheduler.stopScheduler();
 	httpServer.close();
 	process.exit(0);
 });
