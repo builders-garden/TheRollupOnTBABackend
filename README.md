@@ -1,4 +1,4 @@
-# Checkmates Service
+# Rollup on TBA Service
 
 A Node.js TypeScript service implementing Express API and websocket server.
 
@@ -13,8 +13,8 @@ A Node.js TypeScript service implementing Express API and websocket server.
 1. Clone the repository:
 
 ```bash
-git clone <repository-url> checkmates-backend
-cd checkmates-backend
+git clone <repository-url> rollup-on-tba-backend
+cd rollup-on-tba-backend
 ```
 
 2. Install dependencies:
@@ -32,7 +32,6 @@ pnpm install
      - `NEYNAR_API_KEY`: Your Neynar API key
      - `APP_URL`: Your application's public URL
      - Other variables can be left as default for local development
-
 
 ## Development
 
@@ -110,7 +109,6 @@ curl -X POST http://localhost:3000/api/notifications \
 
 See [LICENSE.md](./LICENSE.md)
 
-
 # Websocket Events
 
 Explanation of the websocket events based on the flow of the game.
@@ -124,11 +122,9 @@ Explanation of the websocket events based on the flow of the game.
 - The client now can share the game id with the opponent through the app, either via a DC or a public cast.
 - if the opponent has the miniapp saved, he will receive a notification to join the game.
 
-
 ## 1.b Against a random opponent
 
 - TBD
-
 
 ## 2. Game Joining
 
@@ -144,7 +140,6 @@ Once an opponent joins the game, it sends a `JoinGameRequest` to the server.
 
 - `participant_ready`: Client sends a request to indicate that the participant is ready to start the game.
 - `participant_ready_ack`: Server sends a response to the client with the game id and status.
-
 
 ## 4. Start Game
 
@@ -178,7 +173,6 @@ Any participant can end the game, either by resigning or by requesting a draw.
 - if the other participant accepts the draw request, the server sends a `game_ended` to the other participant with the game id and status.
 - if the other participant rejects the draw request, the server sends a `resume_game` to the client with the game id and status telling all the players to resume the game.
 
-
 ## 7. Game Paused
 
 If a user disconnects (close app, drop connection, etc.), the game continues up to the participant remaining time.
@@ -205,6 +199,7 @@ Spectators can join a game to watch the game.
 - The client now can watch the game.
 
 ## Other
+
 ### 10. Errors
 
 There can be errors in the game moves, or in the update to db state or in the backend logic:

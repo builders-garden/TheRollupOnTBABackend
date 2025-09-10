@@ -6,7 +6,7 @@ export type Event = {
 	walletAddress: Address;
 	username: string;
 	profilePicture: string;
-}
+};
 
 export type Tip = Event & {
 	amount: string;

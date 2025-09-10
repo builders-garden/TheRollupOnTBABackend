@@ -8,14 +8,16 @@ export class BackendSmartContractService {
 	 * Hello world
 	 * Sample function
 	 */
-	static async helloWorld(
-		
-	): Promise<{ success: boolean; message?: string, error?: string }> {
+	static async helloWorld(): Promise<{
+		success: boolean;
+		message?: string;
+		error?: string;
+	}> {
 		try {
 			return {
 				success: true,
 				message: "Hello world",
-			}
+			};
 		} catch (error) {
 			return {
 				success: false,

@@ -11,9 +11,9 @@ export class JoinStreamHandler extends SocketHandler {
 				return;
 			}
 			this.emitToStream(ServerToClientSocketEvents.STREAM_JOINED, {
-                username,
-                profilePicture,
-            });
+				username,
+				profilePicture,
+			});
 		} catch (e) {
 			console.error(`[CREATE GAME] Error creating game: ${e}`);
 			this.emitToStream(ServerToClientSocketEvents.ERROR, {

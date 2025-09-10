@@ -7,7 +7,6 @@ export class SocketHandler {
 	protected io: Server;
 	protected roomId: string;
 
-
 	constructor(socket: Socket, io: Server) {
 		this.socket = socket;
 		this.io = io;
@@ -26,4 +25,3 @@ export class SocketHandler {
 		this.socket.join(this.roomId);
 	}
 }
-

@@ -12,20 +12,22 @@ import {
 	TipSentHandler,
 	TokenTradedHandler,
 	VoteCastedHandler,
+	StartSentimentPollHandler,
+	EndSentimentPollHandler,
 } from "./handlers";
 import { baseOrigins, localOrigins } from "./lib/cors";
 import { setIOInstance } from "./lib/socket";
 import { handleError, handleNotFound } from "./middleware/error.middleware";
 import responseMiddleware from "./middleware/response";
 import type {
+	EndSentimentPollEvent,
 	JoinStreamEvent,
+	StartSentimentPollEvent,
 	TipSentEvent,
 	TokenTradedEvent,
-	VoteCastedEvent
+	VoteCastedEvent,
 } from "./types";
-import {
-	ClientToServerSocketEvents,
-} from "./types/enums";
+import { ClientToServerSocketEvents } from "./types/enums";
 
 // Load environment variables
 dotenv.config();
@@ -78,13 +80,10 @@ io.on("connection", (socket) => {
 		},
 	);
 
-	socket.on(
-		ClientToServerSocketEvents.TIP_SENT,
-		async (data: TipSentEvent) => {
-			const handler = new TipSentHandler(socket, io);
-			await handler.handle(data);
-		},
-	);
+	socket.on(ClientToServerSocketEvents.TIP_SENT, async (data: TipSentEvent) => {
+		const handler = new TipSentHandler(socket, io);
+		await handler.handle(data);
+	});
 
 	socket.on(
 		ClientToServerSocketEvents.TOKEN_TRADED,
@@ -101,7 +100,23 @@ io.on("connection", (socket) => {
 			await handler.handle(data);
 		},
 	);
-	
+
+	socket.on(
+		ClientToServerSocketEvents.START_SENTIMENT_POLL,
+		async (data: StartSentimentPollEvent) => {
+			const handler = new StartSentimentPollHandler(socket, io);
+			await handler.handle(data);
+		},
+	);
+
+	socket.on(
+		ClientToServerSocketEvents.END_SENTIMENT_POLL,
+		async (data: EndSentimentPollEvent) => {
+			const handler = new EndSentimentPollHandler(socket, io);
+			await handler.handle(data);
+		},
+	);
+
 	// disconnect
 	socket.on("disconnect", async () => {
 		console.log("user disconnected:", socket.id);

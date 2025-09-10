@@ -3,13 +3,19 @@ import { ServerToClientSocketEvents } from "../types/enums";
 import { SocketHandler } from "./socket-handler";
 
 export class VoteCastedHandler extends SocketHandler {
-	async handle({ username, profilePicture, voteAmount, isBull, promptId }: VoteCastedEvent) {
+	async handle({
+		username,
+		profilePicture,
+		voteAmount,
+		isBull,
+		promptId,
+	}: VoteCastedEvent) {
 		try {
 			this.emitToStream(ServerToClientSocketEvents.VOTE_RECEIVED, {
 				username,
 				profilePicture,
 				voteAmount,
-				isBull, 
+				isBull,
 				promptId,
 			});
 		} catch (e) {
