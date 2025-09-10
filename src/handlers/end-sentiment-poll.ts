@@ -1,42 +1,43 @@
 import { env } from "../config/env";
 import { EndSentimentPollEvent } from "../types";
-import { ServerToClientSocketEvents } from "../types/enums";
+import { PopupPositions, ServerToClientSocketEvents } from "../types/enums";
 import { SocketHandler } from "./socket-handler";
 
 export class EndSentimentPollHandler extends SocketHandler {
-	async handle({ id }: EndSentimentPollEvent) {
-		try {
-			// TODO update and retrieve poll to db
-			console.log("poll updated to db", {
-				id,
-			});
-			this.emitToStream(ServerToClientSocketEvents.END_SENTIMENT_POLL, {
-				id,
-				pollQuestion: "",
-				endTime: new Date(),
-				votes: 0,
-				voters: 0,
-				qrCodeUrl: `https://${env.APP_URL}/poll/${id}`,
-				position: "",
-				results: {
-					bullPercent: 30,
-					bearPercent: 70,
-				},
-			});
-			this.emitToStream(ServerToClientSocketEvents.UPDATE_SENTIMENT_POLL, {
-				id,
-				voters: 0,
-				votes: 0,
-				results: {
-					bullPercent: 30,
-					bearPercent: 70,
-				},
-			});
-		} catch (e) {
-			this.emitToStream(ServerToClientSocketEvents.ERROR, {
-				code: 500,
-				message: "Error sending start sentiment poll",
-			});
-		}
-	}
+  async handle({ id }: EndSentimentPollEvent) {
+    try {
+      // TODO update and retrieve poll to db
+      console.log("poll updated to db", {
+        id,
+      });
+      this.emitToStream(ServerToClientSocketEvents.END_SENTIMENT_POLL, {
+        id,
+        pollQuestion: "",
+        endTime: new Date(),
+        votes: 0,
+        voters: 0,
+        qrCodeUrl: `https://${env.APP_URL}/poll/${id}`,
+        position: PopupPositions.TOP_LEFT,
+        results: {
+          bullPercent: 30,
+          bearPercent: 70,
+        },
+      });
+      this.emitToStream(ServerToClientSocketEvents.UPDATE_SENTIMENT_POLL, {
+        id,
+        position: PopupPositions.TOP_LEFT,
+        voters: 0,
+        votes: 0,
+        results: {
+          bullPercent: 30,
+          bearPercent: 70,
+        },
+      });
+    } catch (e) {
+      this.emitToStream(ServerToClientSocketEvents.ERROR, {
+        code: 500,
+        message: "Error sending start sentiment poll",
+      });
+    }
+  }
 }
