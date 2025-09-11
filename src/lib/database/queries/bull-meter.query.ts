@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, lte } from "drizzle-orm";
+import { and, count, desc, eq, gte, lte, gt } from "drizzle-orm";
 import { db } from "../index";
 import {
   brandsTable,
@@ -7,6 +7,7 @@ import {
   UpdateBullMeter,
   type BullMeter,
 } from "../db.schema";
+import { type Hex } from "viem";
 
 /**
  * Create a new bull meter
@@ -36,6 +37,23 @@ export const getBullMeterById = async (
     .select()
     .from(bullMetersTable)
     .where(eq(bullMetersTable.id, bullMeterId))
+    .limit(1);
+
+  return bullMeter[0] || null;
+};
+
+/**
+ * Get a bull meter by pollId
+ * @param pollId - The onchain poll id (Hex)
+ * @returns The bull meter or null if not found
+ */
+export const getBullMeterByPollId = async (
+  pollId: Hex
+): Promise<BullMeter | null> => {
+  const bullMeter = await db
+    .select()
+    .from(bullMetersTable)
+    .where(eq(bullMetersTable.pollId, pollId))
     .limit(1);
 
   return bullMeter[0] || null;
@@ -85,6 +103,20 @@ export const getRecentBullMeters = async (limit = 10): Promise<BullMeter[]> => {
     .from(bullMetersTable)
     .orderBy(desc(bullMetersTable.createdAt))
     .limit(limit);
+};
+
+/**
+ * Get active bull meters (deadline in the future)
+ * @param nowMs - Current time in ms
+ */
+export const getActiveBullMeters = async (
+  nowMs: number
+): Promise<BullMeter[]> => {
+  return await db
+    .select()
+    .from(bullMetersTable)
+    .where(gt(bullMetersTable.deadline, nowMs))
+    .orderBy(desc(bullMetersTable.updatedAt));
 };
 
 /**

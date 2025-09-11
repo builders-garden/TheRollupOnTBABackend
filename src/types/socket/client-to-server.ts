@@ -37,6 +37,7 @@ export type VoteCastedEvent = {
 };
 
 export type StartSentimentPollEvent = {
+  id: string;
   position: PopupPositions;
   //username: string;
   //profilePicture: string;
