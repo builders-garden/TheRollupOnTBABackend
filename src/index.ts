@@ -28,8 +28,14 @@ import type {
   UpdateSentimentPollEvent,
   VoteCastedEvent,
 } from "./types";
-import { ClientToServerSocketEvents } from "./types/enums";
+import {
+  ClientToServerSocketEvents,
+  ServerToClientSocketEvents,
+} from "./types/enums";
 import { UpdateSentimentPollHandler } from "./handlers/update-sentiment-poll";
+import { LiveTimerManager } from "./lib/timer-manager";
+import { handleTimerExpiration } from "./handlers/poll-end-handler";
+import { recoverActiveTimers } from "./lib/timer-persistance";
 
 // Load environment variables
 dotenv.config();
@@ -69,6 +75,26 @@ const io = new SocketIOServer(httpServer, {
 
 // Set the Socket.IO instance
 setIOInstance(io);
+
+// Initialize timer manager for the lives
+const liveTimerManager = LiveTimerManager.getInstance();
+
+// Set up timer callbacks
+liveTimerManager.setOnTimerUpdate((pollId, timer) => {
+  io.to(pollId).emit(ServerToClientSocketEvents.UPDATE_SENTIMENT_POLL, {
+    pollId,
+    timeLeft: timer.timeLeft,
+    lastMoveAt: timer.lastMoveAt || Date.now(),
+  });
+});
+
+liveTimerManager.setOnTimerExpired(async (pollId) => {
+  console.log(`[TIMER EXPIRED] Processing timeout for ${pollId}`);
+  await handleTimerExpiration(io, pollId);
+});
+
+// Recover active timers from database on startup
+recoverActiveTimers();
 
 // Socket.IO connection logic
 io.on("connection", (socket) => {
@@ -151,12 +177,16 @@ httpServer.listen(port, () => {
 // Cleanup on server shutdown
 process.on("SIGINT", () => {
   console.log("Shutting down server...");
+  liveTimerManager.stopAllTimers();
+  liveTimerManager.cleanup();
   httpServer.close();
   process.exit(0);
 });
 
 process.on("SIGTERM", () => {
   console.log("Shutting down server...");
+  liveTimerManager.stopAllTimers();
+  liveTimerManager.cleanup();
   httpServer.close();
   process.exit(0);
 });
