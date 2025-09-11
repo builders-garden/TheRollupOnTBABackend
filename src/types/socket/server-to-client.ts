@@ -69,6 +69,7 @@ export type EndPollNotificationEvent = {
 };
 export type UpdatePollNotificationEvent = {
   id: string;
+  endTime: Date;
   position: PopupPositions;
   voters: number;
   votes: number;

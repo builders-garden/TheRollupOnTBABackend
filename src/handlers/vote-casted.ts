@@ -12,6 +12,8 @@ export class VoteCastedHandler extends SocketHandler {
     position,
   }: VoteCastedEvent) {
     try {
+      // TODO update db with vote
+
       this.emitToStream(ServerToClientSocketEvents.VOTE_RECEIVED, {
         username,
         profilePicture,

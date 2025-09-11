@@ -7,7 +7,7 @@ export class EndSentimentPollHandler extends SocketHandler {
   async handle({ id }: EndSentimentPollEvent) {
     try {
       // TODO update and retrieve poll to db
-      console.log("poll updated to db", {
+      console.log("poll ended also updated to db", {
         id,
       });
       this.emitToStream(ServerToClientSocketEvents.END_SENTIMENT_POLL, {
@@ -26,6 +26,7 @@ export class EndSentimentPollHandler extends SocketHandler {
       this.emitToStream(ServerToClientSocketEvents.UPDATE_SENTIMENT_POLL, {
         id,
         position: PopupPositions.TOP_LEFT,
+        endTime: new Date(),
         voters: 0,
         votes: 0,
         results: {
@@ -36,7 +37,7 @@ export class EndSentimentPollHandler extends SocketHandler {
     } catch (e) {
       this.emitToStream(ServerToClientSocketEvents.ERROR, {
         code: 500,
-        message: "Error sending start sentiment poll",
+        message: "Error sending end sentiment poll",
       });
     }
   }

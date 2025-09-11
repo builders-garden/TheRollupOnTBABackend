@@ -6,6 +6,7 @@ export enum ClientToServerSocketEvents {
   JOIN_STREAM = "stream_joined",
   START_SENTIMENT_POLL = "start_sentiment_poll",
   END_SENTIMENT_POLL = "end_sentiment_poll",
+  UPDATE_SENTIMENT_POLL = "update_sentiment_poll",
 }
 
 // server to client
