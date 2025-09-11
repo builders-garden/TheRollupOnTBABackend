@@ -38,8 +38,8 @@ export type VoteCastedEvent = {
 
 export type StartSentimentPollEvent = {
   position: PopupPositions;
-  username: string;
-  profilePicture: string;
+  //username: string;
+  //profilePicture: string;
   pollQuestion: string;
   endTime: Date;
   guests: Guest[];

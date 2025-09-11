@@ -6,8 +6,8 @@ import { ulid } from "ulid";
 
 export class StartSentimentPollHandler extends SocketHandler {
   async handle({
-    username,
-    profilePicture,
+    //username,
+    //profilePicture,
     pollQuestion,
     endTime,
     guests,
@@ -22,8 +22,8 @@ export class StartSentimentPollHandler extends SocketHandler {
         pollQuestion,
         endTime,
         guests,
-        username,
-        profilePicture,
+        //username,
+        //profilePicture,
       });
       this.emitToStream(ServerToClientSocketEvents.START_SENTIMENT_POLL, {
         id,

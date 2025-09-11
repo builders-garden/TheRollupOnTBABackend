@@ -23,17 +23,6 @@ export class EndSentimentPollHandler extends SocketHandler {
           bearPercent: 70,
         },
       });
-      this.emitToStream(ServerToClientSocketEvents.UPDATE_SENTIMENT_POLL, {
-        id,
-        position: PopupPositions.TOP_LEFT,
-        endTime: new Date(),
-        voters: 0,
-        votes: 0,
-        results: {
-          bullPercent: 30,
-          bearPercent: 70,
-        },
-      });
     } catch (e) {
       this.emitToStream(ServerToClientSocketEvents.ERROR, {
         code: 500,
