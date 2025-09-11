@@ -1,5 +1,7 @@
+import { Hex } from "viem";
+import { getBullMeterByPollId } from "../lib/database/queries/bull-meter.query";
 import { VoteCastedEvent } from "../types";
-import { ServerToClientSocketEvents } from "../types/enums";
+import { PopupPositions, ServerToClientSocketEvents } from "../types/enums";
 import { SocketHandler } from "./socket-handler";
 
 export class VoteCastedHandler extends SocketHandler {
@@ -12,8 +14,6 @@ export class VoteCastedHandler extends SocketHandler {
     position,
   }: VoteCastedEvent) {
     try {
-      // TODO update db with vote
-
       this.emitToStream(ServerToClientSocketEvents.VOTE_RECEIVED, {
         username,
         profilePicture,
@@ -22,6 +22,26 @@ export class VoteCastedHandler extends SocketHandler {
         promptId,
         position,
       });
+
+      // get bullmeter from pollId
+      const bullmeter = await getBullMeterByPollId(promptId as Hex);
+      if (bullmeter) {
+        const totalVotes =
+          (bullmeter.totalYesVotes || 0) + (bullmeter.totalNoVotes || 0);
+        const deadline = new Date((bullmeter.deadline || 0) * 1000);
+
+        this.emitToStream(ServerToClientSocketEvents.UPDATE_SENTIMENT_POLL, {
+          id: bullmeter.pollId,
+          endTime: deadline,
+          position: PopupPositions.TOP_CENTER,
+          votes: totalVotes || 0,
+          voters: totalVotes || 0,
+          results: {
+            bullPercent: (bullmeter.totalYesVotes || 0) / totalVotes,
+            bearPercent: (bullmeter.totalNoVotes || 0) / totalVotes,
+          },
+        });
+      }
     } catch (e) {
       this.emitToStream(ServerToClientSocketEvents.ERROR, {
         code: 500,
