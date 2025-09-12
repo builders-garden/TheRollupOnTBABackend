@@ -12,6 +12,7 @@ export class VoteCastedHandler extends SocketHandler {
     isBull,
     promptId,
     position,
+    endTime,
   }: VoteCastedEvent) {
     try {
       this.emitToStream(ServerToClientSocketEvents.VOTE_RECEIVED, {
@@ -28,11 +29,10 @@ export class VoteCastedHandler extends SocketHandler {
       if (bullmeter) {
         const totalVotes =
           (bullmeter.totalYesVotes || 0) + (bullmeter.totalNoVotes || 0);
-        const deadline = new Date((bullmeter.deadline || 0) * 1000);
 
         this.emitToStream(ServerToClientSocketEvents.UPDATE_SENTIMENT_POLL, {
           id: bullmeter.pollId,
-          endTime: deadline,
+          endTime: endTime,
           position: PopupPositions.TOP_CENTER,
           votes: totalVotes || 0,
           voters: totalVotes || 0,

@@ -34,6 +34,7 @@ export type VoteCastedEvent = {
   voteAmount: string;
   isBull: boolean;
   promptId: string;
+  endTime: Date;
 };
 
 export type StartSentimentPollEvent = {
