@@ -23,7 +23,7 @@ export class EndSentimentPollHandler extends SocketHandler {
         votes: 0,
         voters: 0,
         qrCodeUrl: `https://${env.APP_URL}/poll/${id}`,
-        position: PopupPositions.TOP_LEFT,
+        position: PopupPositions.TOP_CENTER,
         results: {
           bullPercent: 30,
           bearPercent: 70,
@@ -38,7 +38,7 @@ export class EndSentimentPollHandler extends SocketHandler {
         votes: 0,
         voters: 0,
         qrCodeUrl: `https://${env.APP_URL}/poll/${id}`,
-        position: PopupPositions.TOP_LEFT,
+        position: PopupPositions.TOP_CENTER,
         results: {
           bullPercent: 30,
           bearPercent: 70,
