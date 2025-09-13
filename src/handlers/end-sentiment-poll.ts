@@ -12,13 +12,6 @@ export class EndSentimentPollHandler extends SocketHandler {
       manager.stopTimer(id);
       manager.deleteTimer(id);
 
-      // TODO update and retrieve poll to db
-      console.log("poll ended also updated to db", {
-        id,
-        votes,
-        voters,
-        results,
-      });
       this.emitToStream(ServerToClientSocketEvents.END_SENTIMENT_POLL, {
         id,
         pollQuestion: "",

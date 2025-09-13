@@ -11,7 +11,7 @@ export class StartSentimentPollHandler extends SocketHandler {
     //profilePicture,
     pollQuestion,
     endTime,
-    guests,
+    //guests,
     position,
     results,
   }: StartSentimentPollEvent) {
@@ -26,15 +26,6 @@ export class StartSentimentPollHandler extends SocketHandler {
         manager.createTimer(id, secondsLeft);
         manager.startTimer(id);
       }
-      // TODO save poll to db
-      console.log("poll saved to db", {
-        id,
-        pollQuestion,
-        endTime,
-        guests,
-        //username,
-        //profilePicture,
-      });
       this.emitToStream(ServerToClientSocketEvents.START_SENTIMENT_POLL, {
         id,
         pollQuestion,

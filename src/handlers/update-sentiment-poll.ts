@@ -26,7 +26,6 @@ export class UpdateSentimentPollHandler extends SocketHandler {
           }
         }
       }
-      console.log("poll updated to db", data);
       this.emitToStream(ServerToClientSocketEvents.UPDATE_SENTIMENT_POLL, {
         id: data.id,
         endTime: data.endTime,
