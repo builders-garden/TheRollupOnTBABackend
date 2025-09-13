@@ -5,7 +5,7 @@ import { SocketHandler } from "./socket-handler";
 import { LiveTimerManager } from "../lib/timer-manager";
 
 export class EndSentimentPollHandler extends SocketHandler {
-  async handle({ id }: EndSentimentPollEvent) {
+  async handle({ id, votes, voters, results }: EndSentimentPollEvent) {
     try {
       // Stop and remove timer, clear deadline
       const manager = LiveTimerManager.getInstance();
@@ -15,18 +15,21 @@ export class EndSentimentPollHandler extends SocketHandler {
       // TODO update and retrieve poll to db
       console.log("poll ended also updated to db", {
         id,
+        votes,
+        voters,
+        results,
       });
       this.emitToStream(ServerToClientSocketEvents.END_SENTIMENT_POLL, {
         id,
         pollQuestion: "",
         endTime: new Date(),
-        votes: 0,
-        voters: 0,
+        votes: votes,
+        voters: voters,
         qrCodeUrl: `https://${env.APP_URL}/poll/${id}`,
         position: PopupPositions.TOP_LEFT,
         results: {
-          bullPercent: 30,
-          bearPercent: 70,
+          bullPercent: results.bullPercent,
+          bearPercent: results.bearPercent,
         },
       });
     } catch (e) {
