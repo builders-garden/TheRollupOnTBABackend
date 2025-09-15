@@ -1,6 +1,6 @@
 import { env } from "../config/env";
 import { StartSentimentPollEvent } from "../types";
-import { ServerToClientSocketEvents } from "../types/enums";
+import { PopupPositions, ServerToClientSocketEvents } from "../types/enums";
 import { SocketHandler } from "./socket-handler";
 import { LiveTimerManager } from "../lib/timer-manager";
 
@@ -12,7 +12,6 @@ export class StartSentimentPollHandler extends SocketHandler {
     pollQuestion,
     endTime,
     //guests,
-    position,
     results,
   }: StartSentimentPollEvent) {
     try {
@@ -33,7 +32,7 @@ export class StartSentimentPollHandler extends SocketHandler {
         votes: 0,
         voters: 0,
         qrCodeUrl: `https://${env.APP_URL}/poll/${id}`,
-        position,
+        position: PopupPositions.TOP_CENTER,
         results,
       });
     } catch (e) {
