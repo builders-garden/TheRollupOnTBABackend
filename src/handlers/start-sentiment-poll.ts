@@ -10,14 +10,14 @@ export class StartSentimentPollHandler extends SocketHandler {
     //username,
     //profilePicture,
     pollQuestion,
-    endTime,
+    endTimeMs,
     //guests,
     results,
   }: StartSentimentPollEvent) {
     try {
       // Create and start a timer based on provided endTime
       const now = Date.now();
-      const end = new Date(endTime).getTime();
+      const end = endTimeMs;
       const secondsLeft = Math.max(0, Math.ceil((end - now) / 1000));
 
       if (secondsLeft > 0) {
@@ -28,7 +28,7 @@ export class StartSentimentPollHandler extends SocketHandler {
       this.emitToStream(ServerToClientSocketEvents.START_SENTIMENT_POLL, {
         id,
         pollQuestion,
-        endTime,
+        endTimeMs,
         votes: 0,
         voters: 0,
         qrCodeUrl: `${env.APP_URL}/poll/${id}`,

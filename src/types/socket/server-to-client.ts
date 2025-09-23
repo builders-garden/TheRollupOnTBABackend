@@ -43,7 +43,7 @@ export type ErrorEvent = {
 export type PollNotificationEvent = {
   id: string;
   pollQuestion: string;
-  endTime: Date;
+  endTimeMs: number;
   votes: number;
   voters: number;
   qrCodeUrl: string;
@@ -57,7 +57,7 @@ export type PollNotificationEvent = {
 export type EndPollNotificationEvent = {
   id: string;
   pollQuestion: string;
-  endTime: Date;
+  endTimeMs: number;
   votes: number;
   voters: number;
   qrCodeUrl: string;
@@ -69,7 +69,7 @@ export type EndPollNotificationEvent = {
 };
 export type UpdatePollNotificationEvent = {
   id: string;
-  endTime: Date;
+  endTimeMs: number;
   position: PopupPositions;
   voters: number;
   votes: number;

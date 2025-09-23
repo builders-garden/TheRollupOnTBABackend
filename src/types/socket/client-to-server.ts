@@ -34,7 +34,7 @@ export type VoteCastedEvent = {
   voteAmount: string;
   isBull: boolean;
   promptId: string;
-  endTime: Date;
+  endTimeMs: number;
 };
 
 export type StartSentimentPollEvent = {
@@ -43,7 +43,7 @@ export type StartSentimentPollEvent = {
   //username: string;
   //profilePicture: string;
   pollQuestion: string;
-  endTime: Date;
+  endTimeMs: number;
   guests: Guest[];
   results: { bullPercent: number; bearPercent: number };
 };
@@ -58,7 +58,7 @@ export type EndSentimentPollEvent = {
 export type UpdateSentimentPollEvent = {
   id: string;
   position: PopupPositions;
-  endTime: Date;
+  endTimeMs: number;
   voters: number;
   votes: number;
   results: { bullPercent: number; bearPercent: number };

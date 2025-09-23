@@ -23,13 +23,13 @@ export async function handleTimerExpiration(
     if (bullmeter) {
       const totalVotes =
         (bullmeter.totalYesVotes || 0) + (bullmeter.totalNoVotes || 0);
-      const deadline = new Date((bullmeter.deadline || 0) * 1000);
+      const deadlineMs = (bullmeter.deadline || 0) * 1000;
 
       io.emit(ServerToClientSocketEvents.END_SENTIMENT_POLL, {
         id: bullmeter.pollId,
         pollQuestion: bullmeter.prompt,
         qrCodeUrl: `${env.APP_URL}/poll/${bullmeter.pollId}`,
-        endTime: deadline,
+        endTimeMs: deadlineMs,
         position: PopupPositions.TOP_CENTER,
         votes: bullmeter.totalYesVotes || 0,
         voters: bullmeter.totalNoVotes || 0,

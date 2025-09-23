@@ -15,7 +15,7 @@ export class EndSentimentPollHandler extends SocketHandler {
       this.emitToStream(ServerToClientSocketEvents.END_SENTIMENT_POLL, {
         id,
         pollQuestion: "",
-        endTime: new Date(),
+        endTimeMs: Date.now(),
         votes: votes,
         voters: voters,
         qrCodeUrl: `${env.APP_URL}/poll/${id}`,
@@ -30,7 +30,7 @@ export class EndSentimentPollHandler extends SocketHandler {
       this.emitToStream(ServerToClientSocketEvents.END_SENTIMENT_POLL, {
         id,
         pollQuestion: "",
-        endTime: new Date(),
+        endTimeMs: Date.now(),
         votes: 0,
         voters: 0,
         qrCodeUrl: `${env.APP_URL}/poll/${id}`,

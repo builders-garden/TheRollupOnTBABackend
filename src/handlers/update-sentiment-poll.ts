@@ -7,9 +7,9 @@ export class UpdateSentimentPollHandler extends SocketHandler {
   async handle(data: UpdateSentimentPollEvent) {
     try {
       // If endTime changed, adjust timer deadline accordingly
-      if (data.endTime) {
+      if (data.endTimeMs) {
         const now = Date.now();
-        const end = new Date(data.endTime).getTime();
+        const end = data.endTimeMs;
         const secondsLeft = Math.max(0, Math.ceil((end - now) / 1000));
 
         const manager = LiveTimerManager.getInstance();
@@ -28,7 +28,7 @@ export class UpdateSentimentPollHandler extends SocketHandler {
       }
       this.emitToStream(ServerToClientSocketEvents.UPDATE_SENTIMENT_POLL, {
         id: data.id,
-        endTime: data.endTime,
+        endTimeMs: data.endTimeMs,
         position: data.position,
         votes: data.votes,
         voters: data.voters,
