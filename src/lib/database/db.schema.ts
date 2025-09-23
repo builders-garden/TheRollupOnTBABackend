@@ -11,7 +11,6 @@ import {
 import { ulid } from "ulid";
 import { Address, Hex } from "viem";
 import { ActivePlugins, SocialMediaUrls } from "../../types";
-
 /**
  * Brands table
  */
@@ -21,6 +20,7 @@ export const brandsTable = sqliteTable("brands", {
     .$defaultFn(() => ulid()),
   name: text("name"),
   logoUrl: text("logo_url"),
+  coverUrl: text("cover_url"),
   description: text("description"),
   streamTitle: text("stream_title"),
   youtubeLiveUrl: text("youtube_live_url"),
@@ -78,9 +78,9 @@ export type CreateBullMeter = typeof bullMetersTable.$inferInsert;
 export type UpdateBullMeter = Partial<CreateBullMeter>;
 
 /**
- * Tips table
+ * Tip settings table
  */
-export const tipsTable = sqliteTable("tips", {
+export const tipSettingsTable = sqliteTable("tip_settings", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => ulid()),
@@ -92,6 +92,32 @@ export const tipsTable = sqliteTable("tips", {
   payoutEnsName: text("payout_ens_name"),
   amounts: text("amounts"),
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export type TipSettings = typeof tipSettingsTable.$inferSelect;
+export type CreateTipSettings = typeof tipSettingsTable.$inferInsert;
+export type UpdateTipSettings = Partial<CreateTipSettings>;
+
+/**
+ * Tips table
+ */
+export const tipsTable = sqliteTable("tips", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => ulid()),
+  senderId: text("sender_id")
+    .notNull()
+    .references(() => userTable.id, { onDelete: "cascade" }),
+  receiverBrandId: text("receiver_brand_id")
+    .notNull()
+    .references(() => brandsTable.id, { onDelete: "cascade" }),
+  receiverAddress: text("receiver_address"),
+  receiverBaseName: text("receiver_base_name"),
+  receiverEnsName: text("receiver_ens_name"),
+  amount: numeric("amount").notNull(),
+  platform: text("platform").notNull().$type<"farcaster" | "base">(),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
 export type Tip = typeof tipsTable.$inferSelect;
@@ -187,7 +213,7 @@ export type UpdateWallet = Partial<CreateWallet>;
 
 export const brandsRelations = relations(brandsTable, ({ many }) => ({
   bullMeters: many(bullMetersTable),
-  tips: many(tipsTable),
+  tips: many(tipSettingsTable),
   featuredTokens: many(featuredTokensTable),
 }));
 
@@ -198,9 +224,9 @@ export const bullMetersRelations = relations(bullMetersTable, ({ one }) => ({
   }),
 }));
 
-export const tipsRelations = relations(tipsTable, ({ one }) => ({
+export const tipsRelations = relations(tipSettingsTable, ({ one }) => ({
   brand: one(brandsTable, {
-    fields: [tipsTable.brandId],
+    fields: [tipSettingsTable.brandId],
     references: [brandsTable.id],
   }),
 }));

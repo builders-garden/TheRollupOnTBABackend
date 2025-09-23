@@ -28,7 +28,7 @@ export async function handleTimerExpiration(
       io.emit(ServerToClientSocketEvents.END_SENTIMENT_POLL, {
         id: bullmeter.pollId,
         pollQuestion: bullmeter.prompt,
-        qrCodeUrl: `https://${env.APP_URL}/poll/${bullmeter.pollId}`,
+        qrCodeUrl: `${env.APP_URL}/poll/${bullmeter.pollId}`,
         endTime: deadline,
         position: PopupPositions.TOP_CENTER,
         votes: bullmeter.totalYesVotes || 0,

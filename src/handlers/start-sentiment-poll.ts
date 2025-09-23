@@ -31,7 +31,7 @@ export class StartSentimentPollHandler extends SocketHandler {
         endTime,
         votes: 0,
         voters: 0,
-        qrCodeUrl: `https://${env.APP_URL}/poll/${id}`,
+        qrCodeUrl: `${env.APP_URL}/poll/${id}`,
         position: PopupPositions.TOP_CENTER,
         results,
       });

@@ -18,7 +18,7 @@ export class EndSentimentPollHandler extends SocketHandler {
         endTime: new Date(),
         votes: votes,
         voters: voters,
-        qrCodeUrl: `https://${env.APP_URL}/poll/${id}`,
+        qrCodeUrl: `${env.APP_URL}/poll/${id}`,
         position: PopupPositions.TOP_CENTER,
         results: {
           bullPercent: results.bullPercent,
@@ -33,7 +33,7 @@ export class EndSentimentPollHandler extends SocketHandler {
         endTime: new Date(),
         votes: 0,
         voters: 0,
-        qrCodeUrl: `https://${env.APP_URL}/poll/${id}`,
+        qrCodeUrl: `${env.APP_URL}/poll/${id}`,
         position: PopupPositions.TOP_CENTER,
         results: {
           bullPercent: 30,
