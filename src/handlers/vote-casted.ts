@@ -3,19 +3,25 @@ import { getBullMeterByPollId } from "../lib/database/queries/bull-meter.query";
 import { VoteCastedEvent } from "../types";
 import { PopupPositions, ServerToClientSocketEvents } from "../types/enums";
 import { SocketHandler } from "./socket-handler";
+import { getBrandById } from "../lib/database/queries";
 
 export class VoteCastedHandler extends SocketHandler {
   async handle({
+    brandId,
     username,
     profilePicture,
     voteAmount,
     isBull,
     promptId,
     position,
-    endTime,
+    endTimeMs,
   }: VoteCastedEvent) {
     try {
-      this.emitToStream(ServerToClientSocketEvents.VOTE_RECEIVED, {
+      const brand = await getBrandById(brandId);
+      if (!brand) throw new Error("Brand not found");
+
+      this.emitToStream(brandId, ServerToClientSocketEvents.VOTE_RECEIVED, {
+        brandId,
         username,
         profilePicture,
         voteAmount,
@@ -30,20 +36,26 @@ export class VoteCastedHandler extends SocketHandler {
         const totalVotes =
           (bullmeter.totalYesVotes || 0) + (bullmeter.totalNoVotes || 0);
 
-        this.emitToStream(ServerToClientSocketEvents.UPDATE_SENTIMENT_POLL, {
-          id: bullmeter.pollId,
-          endTime: endTime,
-          position: PopupPositions.TOP_CENTER,
-          votes: totalVotes || 0,
-          voters: totalVotes || 0,
-          results: {
-            bullPercent: (bullmeter.totalYesVotes || 0) / totalVotes,
-            bearPercent: (bullmeter.totalNoVotes || 0) / totalVotes,
-          },
-        });
+        this.emitToStream(
+          brandId,
+          ServerToClientSocketEvents.UPDATE_SENTIMENT_POLL,
+          {
+            brandId,
+            id: bullmeter.pollId,
+            endTimeMs: endTimeMs,
+            position: PopupPositions.TOP_CENTER,
+            votes: totalVotes || 0,
+            voters: totalVotes || 0,
+            results: {
+              bullPercent: (bullmeter.totalYesVotes || 0) / totalVotes,
+              bearPercent: (bullmeter.totalNoVotes || 0) / totalVotes,
+            },
+          }
+        );
       }
     } catch (e) {
-      this.emitToStream(ServerToClientSocketEvents.ERROR, {
+      this.emitToStream(brandId, ServerToClientSocketEvents.ERROR, {
+        brandId,
         code: 500,
         message: "Error sending vote casted",
       });

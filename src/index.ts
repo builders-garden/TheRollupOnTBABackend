@@ -80,8 +80,9 @@ setIOInstance(io);
 const liveTimerManager = LiveTimerManager.getInstance();
 
 // Set up timer callbacks
-liveTimerManager.setOnTimerUpdate((pollId, timer) => {
+liveTimerManager.setOnTimerUpdate((pollId, brandId, timer) => {
   io.to(pollId).emit(ServerToClientSocketEvents.UPDATE_SENTIMENT_POLL, {
+    brandId,
     pollId,
     timeLeft: timer.timeLeft,
     lastMoveAt: timer.lastMoveAt || Date.now(),
@@ -103,12 +104,14 @@ io.on("connection", (socket) => {
   socket.on(
     ClientToServerSocketEvents.JOIN_STREAM,
     async (data: JoinStreamEvent) => {
+      console.log("1. JOIN_STREAM", data);
       const handler = new JoinStreamHandler(socket, io);
       await handler.handle(data);
     }
   );
 
   socket.on(ClientToServerSocketEvents.TIP_SENT, async (data: TipSentEvent) => {
+    console.log("2. TIP_SENT", data);
     const handler = new TipSentHandler(socket, io);
     await handler.handle(data);
   });
@@ -116,6 +119,7 @@ io.on("connection", (socket) => {
   socket.on(
     ClientToServerSocketEvents.TOKEN_TRADED,
     async (data: TokenTradedEvent) => {
+      console.log("3. TOKEN_TRADED", data);
       const handler = new TokenTradedHandler(socket, io);
       await handler.handle(data);
     }
@@ -124,6 +128,7 @@ io.on("connection", (socket) => {
   socket.on(
     ClientToServerSocketEvents.VOTE_CASTED,
     async (data: VoteCastedEvent) => {
+      console.log("4. VOTE_CASTED", data);
       const handler = new VoteCastedHandler(socket, io);
       await handler.handle(data);
     }
@@ -132,6 +137,7 @@ io.on("connection", (socket) => {
   socket.on(
     ClientToServerSocketEvents.START_SENTIMENT_POLL,
     async (data: StartSentimentPollEvent) => {
+      console.log("5. START_SENTIMENT_POLL", data);
       const handler = new StartSentimentPollHandler(socket, io);
       await handler.handle(data);
     }
@@ -140,6 +146,7 @@ io.on("connection", (socket) => {
   socket.on(
     ClientToServerSocketEvents.END_SENTIMENT_POLL,
     async (data: EndSentimentPollEvent) => {
+      console.log("6. END_SENTIMENT_POLL", data);
       const handler = new EndSentimentPollHandler(socket, io);
       await handler.handle(data);
     }
@@ -148,6 +155,7 @@ io.on("connection", (socket) => {
   socket.on(
     ClientToServerSocketEvents.UPDATE_SENTIMENT_POLL,
     async (data: UpdateSentimentPollEvent) => {
+      console.log("7. UPDATE_SENTIMENT_POLL", data);
       const handler = new UpdateSentimentPollHandler(socket, io);
       await handler.handle(data);
     }

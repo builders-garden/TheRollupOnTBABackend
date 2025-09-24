@@ -1,11 +1,13 @@
 import { PopupPositions, ServerToClientSocketEvents } from "../enums";
 
 export type StreamJoinedEvent = {
+  brandId: string;
   username: string;
   profilePicture: string;
 };
 
 export type TipReceivedEvent = {
+  brandId: string;
   position: PopupPositions;
   username: string;
   profilePicture: string;
@@ -13,6 +15,7 @@ export type TipReceivedEvent = {
 };
 
 export type TokenTradeEvent = {
+  brandId: string;
   position: PopupPositions;
   username: string;
   profilePicture: string;
@@ -27,6 +30,7 @@ export type TokenTradeEvent = {
 };
 
 export type VoteReceivedEvent = {
+  brandId: string;
   position: PopupPositions;
   username: string;
   profilePicture: string;
@@ -36,14 +40,16 @@ export type VoteReceivedEvent = {
 };
 
 export type ErrorEvent = {
+  brandId: string;
   code: number;
   message: string;
 };
 
 export type PollNotificationEvent = {
   id: string;
+  brandId: string;
   pollQuestion: string;
-  endTime: Date;
+  endTimeMs: number;
   votes: number;
   voters: number;
   qrCodeUrl: string;
@@ -56,8 +62,9 @@ export type PollNotificationEvent = {
 
 export type EndPollNotificationEvent = {
   id: string;
+  brandId: string;
   pollQuestion: string;
-  endTime: Date;
+  endTimeMs: number;
   votes: number;
   voters: number;
   qrCodeUrl: string;
@@ -69,7 +76,8 @@ export type EndPollNotificationEvent = {
 };
 export type UpdatePollNotificationEvent = {
   id: string;
-  endTime: Date;
+  brandId: string;
+  endTimeMs: number;
   position: PopupPositions;
   voters: number;
   votes: number;

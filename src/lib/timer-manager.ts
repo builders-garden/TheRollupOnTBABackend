@@ -1,11 +1,16 @@
 export interface LiveTimer {
   pollId: string;
+  brandId: string;
   timeLeft: number;
   intervalId: NodeJS.Timeout | null;
   lastMoveAt: number | null;
 }
 
-type TimerUpdateCallback = (pollId: string, timer: LiveTimer) => void;
+type TimerUpdateCallback = (
+  pollId: string,
+  brandId: string,
+  timer: LiveTimer
+) => void;
 type TimerExpiredCallback = (pollId: string) => void;
 
 export class LiveTimerManager {
@@ -42,7 +47,15 @@ export class LiveTimerManager {
   /**
    * Create a new timer for a live poll
    */
-  public createTimer(pollId: string, timeLeft: number): LiveTimer | null {
+  public createTimer({
+    pollId,
+    brandId,
+    timeLeft,
+  }: {
+    pollId: string;
+    brandId: string;
+    timeLeft: number;
+  }): LiveTimer | null {
     try {
       // Check if timer already exists for this live poll
       const existingTimer = this.timers.get(pollId);
@@ -54,8 +67,9 @@ export class LiveTimerManager {
       }
 
       const timer: LiveTimer = {
-        pollId: pollId,
-        timeLeft: timeLeft,
+        pollId,
+        brandId,
+        timeLeft,
         lastMoveAt: null,
         intervalId: null,
       };
@@ -75,7 +89,7 @@ export class LiveTimerManager {
   /**
    * Start the timer for a live poll
    */
-  public startTimer(pollId: string): boolean {
+  public startTimer(pollId: string, brandId: string): boolean {
     const timer = this.timers.get(pollId);
     if (!timer) {
       console.error(`[TIMER] Timer not found for live poll ${pollId}`);
@@ -99,7 +113,7 @@ export class LiveTimerManager {
 
     // Start countdown interval
     timer.intervalId = setInterval(() => {
-      this.tickTimer(pollId);
+      this.tickTimer(pollId, brandId);
     }, 1000);
 
     console.log(`[TIMER] Started timer for live poll ${pollId}`);
@@ -215,7 +229,7 @@ export class LiveTimerManager {
   /**
    * Internal method to handle timer tick
    */
-  private tickTimer(pollId: string): void {
+  private tickTimer(pollId: string, brandId: string): void {
     const timer = this.timers.get(pollId);
     if (!timer) {
       return;
@@ -231,7 +245,7 @@ export class LiveTimerManager {
 
     // Emit timer update
     if (this.onTimerUpdate) {
-      this.onTimerUpdate(pollId, timer);
+      this.onTimerUpdate(pollId, brandId, timer);
     }
   }
 
