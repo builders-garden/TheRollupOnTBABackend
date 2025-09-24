@@ -18,7 +18,8 @@ export const brandsTable = sqliteTable("brands", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => ulid()),
-  name: text("name"),
+  name: text("name").default("").notNull(),
+  slug: text("slug").default("").notNull(),
   logoUrl: text("logo_url"),
   coverUrl: text("cover_url"),
   description: text("description"),
