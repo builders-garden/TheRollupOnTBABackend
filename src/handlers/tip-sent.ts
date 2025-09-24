@@ -1,23 +1,30 @@
+import { getBrandById } from "../lib/database/queries";
 import { TipSentEvent } from "../types";
 import { ServerToClientSocketEvents } from "../types/enums";
 import { SocketHandler } from "./socket-handler";
 
 export class TipSentHandler extends SocketHandler {
   async handle({
+    brandId,
     username,
     profilePicture,
     tipAmount,
     position,
   }: TipSentEvent) {
     try {
-      this.emitToStream(ServerToClientSocketEvents.TIP_RECEIVED, {
+      const brand = await getBrandById(brandId);
+      if (!brand) throw new Error("Brand not found");
+
+      this.emitToStream(brandId, ServerToClientSocketEvents.TIP_RECEIVED, {
+        brandId,
         username,
         profilePicture,
         tipAmount,
         position,
       });
     } catch (e) {
-      this.emitToStream(ServerToClientSocketEvents.ERROR, {
+      this.emitToStream(brandId, ServerToClientSocketEvents.ERROR, {
+        brandId,
         code: 500,
         message: "Error sending tip",
       });

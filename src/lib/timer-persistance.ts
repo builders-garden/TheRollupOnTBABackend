@@ -24,9 +24,13 @@ export async function recoverActiveTimers(): Promise<void> {
       const remainingSec = Math.ceil(remainingMs / 1000);
       if (remainingSec <= 0) continue;
 
-      const created = manager.createTimer(meter.pollId as Hex, remainingSec);
+      const created = manager.createTimer({
+        pollId: meter.pollId as Hex,
+        brandId: meter.brandId as Hex,
+        timeLeft: remainingSec,
+      });
       if (created) {
-        manager.startTimer(meter.pollId as Hex);
+        manager.startTimer(meter.pollId as Hex, meter.brandId as Hex);
         console.log(
           `[TIMER-PERSISTENCE] Recovered timer for poll ${meter.pollId} with ${remainingSec}s left`
         );
