@@ -1,5 +1,5 @@
-import { type MiniAppNotificationDetails } from "@farcaster/miniapp-core";
-import { relations, sql } from "drizzle-orm";
+import { MiniAppNotificationDetails } from "@farcaster/miniapp-core";
+import { sql } from "drizzle-orm";
 import {
   index,
   integer,
@@ -10,7 +10,8 @@ import {
 } from "drizzle-orm/sqlite-core";
 import { ulid } from "ulid";
 import { Address, Hex } from "viem";
-import { ActivePlugins, SocialMediaUrls } from "../../types";
+import { ActivePlugins, SocialMediaUrls } from "../types/shared.type";
+
 /**
  * Brands table
  */
@@ -34,9 +35,6 @@ export const brandsTable = sqliteTable("brands", {
   })
     .$type<SocialMediaUrls>()
     .default({ youtube: "", twitch: "", x: "" }),
-  walletAddresses: text("wallet_addresses", { mode: "json" })
-    .$type<Address[]>()
-    .notNull(),
   isActive: integer("is_active", { mode: "boolean" }).default(false),
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
@@ -71,7 +69,7 @@ export const bullMetersTable = sqliteTable(
     createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
   },
-  (t) => [index("idx_bull_meters_brand_id").on(t.brandId)]
+  (t) => [index("idx_bull_meters_brand_id").on(t.brandId)],
 );
 
 export type BullMeter = typeof bullMetersTable.$inferSelect;
@@ -178,7 +176,7 @@ export const userTable = sqliteTable(
     createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
   },
-  (t) => [uniqueIndex("user_farcaster_fid_unique").on(t.farcasterFid)]
+  (t) => [uniqueIndex("user_farcaster_fid_unique").on(t.farcasterFid)],
 );
 
 export type User = typeof userTable.$inferSelect;
@@ -203,52 +201,27 @@ export const walletTable = sqliteTable(
     createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
   },
-  (t) => [index("idx_wallet_user_id").on(t.userId)]
+  (t) => [index("idx_wallet_user_id").on(t.userId)],
 );
 
 export type Wallet = typeof walletTable.$inferSelect;
 export type CreateWallet = typeof walletTable.$inferInsert;
 export type UpdateWallet = Partial<CreateWallet>;
 
-// relations
+/**
+ * Admins table
+ */
+export const adminsTable = sqliteTable("admins", {
+  address: text("address").$type<Address>().primaryKey(),
+  baseName: text("base_name"),
+  ensName: text("ens_name"),
+  brandId: text("brand_id")
+    .notNull()
+    .references(() => brandsTable.id, { onDelete: "cascade" }),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
 
-export const brandsRelations = relations(brandsTable, ({ many }) => ({
-  bullMeters: many(bullMetersTable),
-  tips: many(tipSettingsTable),
-  featuredTokens: many(featuredTokensTable),
-}));
-
-export const bullMetersRelations = relations(bullMetersTable, ({ one }) => ({
-  brand: one(brandsTable, {
-    fields: [bullMetersTable.brandId],
-    references: [brandsTable.id],
-  }),
-}));
-
-export const tipsRelations = relations(tipSettingsTable, ({ one }) => ({
-  brand: one(brandsTable, {
-    fields: [tipSettingsTable.brandId],
-    references: [brandsTable.id],
-  }),
-}));
-
-export const featuredTokensRelations = relations(
-  featuredTokensTable,
-  ({ one }) => ({
-    brand: one(brandsTable, {
-      fields: [featuredTokensTable.brandId],
-      references: [brandsTable.id],
-    }),
-  })
-);
-
-export const userRelations = relations(userTable, ({ many }) => ({
-  wallets: many(walletTable),
-}));
-
-export const walletRelations = relations(walletTable, ({ one }) => ({
-  user: one(userTable, {
-    fields: [walletTable.userId],
-    references: [userTable.id],
-  }),
-}));
+export type Admin = typeof adminsTable.$inferSelect;
+export type CreateAdmin = typeof adminsTable.$inferInsert;
+export type UpdateAdmin = Partial<CreateAdmin>;
