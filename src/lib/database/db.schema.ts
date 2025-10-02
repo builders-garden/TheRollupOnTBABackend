@@ -10,6 +10,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 import { ulid } from "ulid";
 import { Address, Hex } from "viem";
+import { ZERO_ADDRESS } from "../contract-constants";
 import { ActivePlugins, SocialMediaUrls } from "../types/shared.type";
 
 /**
@@ -25,7 +26,10 @@ export const brandsTable = sqliteTable("brands", {
   coverUrl: text("cover_url"),
   description: text("description"),
   streamTitle: text("stream_title"),
+  youtubeChannelId: text("youtube_channel_id"),
   youtubeLiveUrl: text("youtube_live_url"),
+  liveUrlExpiration: integer("live_url_expiration"),
+  isLive: integer("is_live", { mode: "boolean" }).default(false),
   activePlugins: text("active_plugins", { mode: "json" }).$type<
     ActivePlugins[]
   >(),
@@ -60,9 +64,12 @@ export const bullMetersTable = sqliteTable(
     pollId: text("poll_id").$type<Hex>().default("0x").notNull(),
     votePrice: numeric("vote_price"),
     duration: integer("duration"),
-    payoutAddresses: text("payout_addresses", { mode: "json" }).$type<
-      Address[]
-    >(),
+    ownerAddress: text("owner_address")
+      .$type<Address>()
+      .notNull()
+      .default(ZERO_ADDRESS),
+    guestAddress: text("guest_address").$type<Address>(),
+    guestSplitPercent: numeric("guest_split_percent"),
     totalYesVotes: integer("total_yes_votes"),
     totalNoVotes: integer("total_no_votes"),
     deadline: integer("deadline"),
@@ -75,6 +82,32 @@ export const bullMetersTable = sqliteTable(
 export type BullMeter = typeof bullMetersTable.$inferSelect;
 export type CreateBullMeter = typeof bullMetersTable.$inferInsert;
 export type UpdateBullMeter = Partial<CreateBullMeter>;
+
+/**
+ * Bull Meter Votes table
+ */
+export const bullMeterVotesTable = sqliteTable("bull_meter_votes", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => ulid()),
+  pollId: text("poll_id").$type<Hex>().notNull(),
+  senderId: text("sender_id")
+    .notNull()
+    .references(() => userTable.id, { onDelete: "cascade" }),
+  receiverBrandId: text("receiver_brand_id")
+    .notNull()
+    .references(() => brandsTable.id, { onDelete: "cascade" }),
+  votePrice: numeric("vote_price").notNull(),
+  votes: integer("votes").notNull(),
+  platform: text("platform").$type<"farcaster" | "base" | null>().default(null),
+  isBull: integer("is_bull", { mode: "boolean" }).notNull(),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export type BullmeterVote = typeof bullMeterVotesTable.$inferSelect;
+export type CreateBullmeterVote = typeof bullMeterVotesTable.$inferInsert;
+export type UpdateBullmeterVote = Partial<CreateBullmeterVote>;
 
 /**
  * Tip settings table
@@ -114,7 +147,7 @@ export const tipsTable = sqliteTable("tips", {
   receiverBaseName: text("receiver_base_name"),
   receiverEnsName: text("receiver_ens_name"),
   amount: numeric("amount").notNull(),
-  platform: text("platform").notNull().$type<"farcaster" | "base">(),
+  platform: text("platform").$type<"farcaster" | "base" | null>().default(null),
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
@@ -225,3 +258,17 @@ export const adminsTable = sqliteTable("admins", {
 export type Admin = typeof adminsTable.$inferSelect;
 export type CreateAdmin = typeof adminsTable.$inferInsert;
 export type UpdateAdmin = Partial<CreateAdmin>;
+
+/**
+ * Beta Access Keys table
+ */
+export const betaAccessKeysTable = sqliteTable("beta_access_keys", {
+  key: text("key").primaryKey(),
+  used: integer("used", { mode: "boolean" }).default(false),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export type BetaAccessKey = typeof betaAccessKeysTable.$inferSelect;
+export type CreateBetaAccessKey = typeof betaAccessKeysTable.$inferInsert;
+export type UpdateBetaAccessKey = Partial<CreateBetaAccessKey>;
