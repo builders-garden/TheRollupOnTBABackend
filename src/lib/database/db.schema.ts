@@ -99,7 +99,9 @@ export const bullMeterVotesTable = sqliteTable("bull_meter_votes", {
     .references(() => brandsTable.id, { onDelete: "cascade" }),
   votePrice: numeric("vote_price").notNull(),
   votes: integer("votes").notNull(),
-  platform: text("platform").$type<"farcaster" | "base" | null>().default(null),
+  platform: text("platform")
+    .$type<"farcaster" | "base" | "web-app" | null>()
+    .default(null),
   isBull: integer("is_bull", { mode: "boolean" }).notNull(),
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
@@ -147,7 +149,9 @@ export const tipsTable = sqliteTable("tips", {
   receiverBaseName: text("receiver_base_name"),
   receiverEnsName: text("receiver_ens_name"),
   amount: numeric("amount").notNull(),
-  platform: text("platform").$type<"farcaster" | "base" | null>().default(null),
+  platform: text("platform")
+    .$type<"farcaster" | "base" | "web-app" | null>()
+    .default(null),
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
