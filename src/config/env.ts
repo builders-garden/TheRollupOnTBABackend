@@ -25,6 +25,9 @@ const envSchema = z.object({
   // Turso Database
   TURSO_DATABASE_URL: z.string().url(),
   TURSO_DATABASE_TOKEN: z.string(),
+
+  // Redis
+  REDIS_URL: z.string().url(),
 });
 
 export type Env = z.infer<typeof envSchema>;
