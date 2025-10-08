@@ -177,6 +177,13 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+// Current time endpoint
+app.get("/current-time", (_req, res) => {
+  res.json({ 
+    timestamp: Date.now(),
+  });
+});
+
 // BullMeter API routes
 app.use("/api/bullmeter", bullmeterRoute);
 
