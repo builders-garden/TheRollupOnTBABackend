@@ -87,7 +87,7 @@ export const processBullMeterWebhookJob = async (
       functionName: "voteFor",
       args: [voter, pollIdHex, isBull, voteCountBigInt],
     });
-    /*const hash = await walletClient.sendTransaction({
+    const hash = await walletClient.sendTransaction({
       account,
       to: BULLMETER_ADDRESS as `0x${string}`,
       data,
@@ -96,10 +96,8 @@ export const processBullMeterWebhookJob = async (
 
     // Wait for the transaction to be mined
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
-*/
     // Store the vote data in the database
-    //if (receipt.status === "success") {
-    if (true) {
+    if (receipt.status === "success") {
       try {
         await createBullmeterVote({
           pollId: pollIdHex,
@@ -147,7 +145,7 @@ export const processBullMeterWebhookJob = async (
             const totalVotes =
               (bullmeter.totalYesVotes || 0) + (bullmeter.totalNoVotes || 0);
             const pollEndTimeMs = endTimeMs || (bullmeter.deadline || 0) * 1000;
-
+            console.log("here porcodio");
             io.to(receiverBrandId).emit(
               ServerToClientSocketEvents.UPDATE_SENTIMENT_POLL,
               {
@@ -171,10 +169,6 @@ export const processBullMeterWebhookJob = async (
               }
             );
           }
-
-          console.log(
-            `Vote casted events emitted successfully: ${voteCount} individual vote events`
-          );
         } catch (socketError) {
           console.log("Error emitting vote casted events:", socketError);
           // Don't fail the job if socket emission fails
@@ -185,7 +179,6 @@ export const processBullMeterWebhookJob = async (
       }
     }
 
-    const hash = "0x123";
     return {
       success: true,
       processedAt: new Date().toISOString(),
