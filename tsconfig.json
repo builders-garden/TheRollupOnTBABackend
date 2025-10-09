@@ -1,24 +1,21 @@
 {
-  "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src",
-    "sourceMap": true,
-    "target": "es2022",
-    "module": "esnext",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
-    "noImplicitAny": true,
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
-    "noEmit": true
-  },
-  "include": ["./*.js", "src/**/*.ts"],
-  "exclude": ["test/*.ts", "node_modules", "**/*.test.ts"]
+	"compilerOptions": {
+		"outDir": "dist",
+		"rootDir": "src",
+		"sourceMap": true,
+		"target": "es6",
+		"module": "commonjs",
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"noImplicitAny": true,
+		"strict": true,
+		"moduleResolution": "node",
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"skipLibCheck": true
+	},
+	"include": ["./*.js", "src/**/*.ts"],
+	"exclude": ["test/*.ts", "node_modules", "**/*.test.ts"]
 }
