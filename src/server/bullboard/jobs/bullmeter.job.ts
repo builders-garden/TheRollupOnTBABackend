@@ -16,7 +16,8 @@ import { createBullmeterVote } from "../../../lib/database/queries/bullmeter-vot
 import { getIOInstance } from "../../../lib/socket.js";
 import { ServerToClientSocketEvents } from "../../../types/enums.js";
 import { PopupPositions } from "../../../types/enums.js";
-import { getBullMeterByPollId } from "../../../lib/database/queries/bull-meter.query.js";
+import { getBullMeterByPollId, updateVoteCounts } from "../../../lib/database/queries/bull-meter.query.js";
+import { BullMeter } from "../../../lib/database/db.schema.js";
 
 export const processBullMeterWebhookJob = async (
   job: Job<BullMeterWebhookJobData>
@@ -109,6 +110,19 @@ export const processBullMeterWebhookJob = async (
           platform: platform as "farcaster" | "base" | "web-app" | null,
         });
         console.log("Vote stored in database successfully");
+        // Update database with vote counts
+        let updatedBullMeter: BullMeter | null = null;
+        try {
+          updatedBullMeter = await updateVoteCounts(
+            pollId,
+            isBull,
+            Number(voteCountBigInt),
+          );
+        } catch (dbError) {
+          console.log("❌ Database update failed:", dbError);
+          // Don't fail the entire request if database update fails
+          // The blockchain transaction was successful
+        }
 
         // Emit vote casted event to clients
         try {
@@ -145,7 +159,6 @@ export const processBullMeterWebhookJob = async (
             const totalVotes =
               (bullmeter.totalYesVotes || 0) + (bullmeter.totalNoVotes || 0);
             const pollEndTimeMs = endTimeMs || (bullmeter.deadline || 0) * 1000;
-            console.log("here porcodio");
             io.to(receiverBrandId).emit(
               ServerToClientSocketEvents.UPDATE_SENTIMENT_POLL,
               {
