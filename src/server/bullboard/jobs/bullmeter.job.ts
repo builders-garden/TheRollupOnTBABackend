@@ -17,7 +17,6 @@ import { getIOInstance } from "../../../lib/socket.js";
 import { ServerToClientSocketEvents } from "../../../types/enums.js";
 import { PopupPositions } from "../../../types/enums.js";
 import { getBullMeterByPollId, updateVoteCounts } from "../../../lib/database/queries/bull-meter.query.js";
-import { BullMeter } from "../../../lib/database/db.schema.js";
 
 export const processBullMeterWebhookJob = async (
   job: Job<BullMeterWebhookJobData>
