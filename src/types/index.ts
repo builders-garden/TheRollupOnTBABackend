@@ -38,3 +38,25 @@ export type SocialMedias = "youtube" | "twitch" | "x";
 export type SocialMediaUrls = {
   [key in SocialMedias]: string;
 };
+
+// BullMeter webhook job data
+export type BullMeterWebhookJobData = {
+  pollId: string;
+  isBull: boolean;
+  votes: string;
+  votePrice: string;
+  platform: string;
+  senderId: string;
+  voterAddress: string;
+  receiverBrandId: string;
+  // Optional fields with defaults
+  username?: string;
+  position?: string;
+  profilePicture?: string;
+  endTimeMs?: number;
+};
+
+// Queue names
+export const QUEUES = {
+  BULLMETER_WEBHOOK_QUEUE: "bullmeter-webhook-queue",
+} as const;

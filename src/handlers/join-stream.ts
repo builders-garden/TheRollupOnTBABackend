@@ -2,6 +2,9 @@ import { getBrandById } from "../lib/database/queries";
 import { ServerToClientSocketEvents } from "../types/enums";
 import { JoinStreamEvent } from "../types/socket/client-to-server";
 import { SocketHandler } from "./socket-handler";
+// Import Bull jobs and workers to process jobs
+import "../server/bullboard/jobs/index.js";
+import "../server/bullboard/workers/index.js";
 
 export class JoinStreamHandler extends SocketHandler {
   async handle({ username, profilePicture, brandId }: JoinStreamEvent) {
