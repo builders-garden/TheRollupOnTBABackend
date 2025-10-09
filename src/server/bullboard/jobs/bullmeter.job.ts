@@ -96,9 +96,8 @@ export const processBullMeterWebhookJob = async (
         });
         console.log("Vote stored in database successfully");
         // Update database with vote counts
-        let updatedBullMeter: BullMeter | null = null;
         try {
-          updatedBullMeter = await updateVoteCounts(
+          await updateVoteCounts(
             pollId,
             isBull,
             Number(voteCountBigInt),
