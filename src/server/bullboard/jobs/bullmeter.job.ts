@@ -37,21 +37,6 @@ export const processBullMeterWebhookJob = async (
     endTimeMs,
   } = job.data;
 
-  console.log("Processing BullMeter webhook job:", {
-    pollId,
-    isBull,
-    votes,
-    votePrice,
-    platform,
-    senderId,
-    voterAddress,
-    receiverBrandId,
-    username,
-    position,
-    profilePicture,
-    endTimeMs,
-  });
-
   try {
     // Create account from private key
     const account = privateKeyToAccount(
