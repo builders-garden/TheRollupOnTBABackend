@@ -36,6 +36,11 @@ import { UpdateSentimentPollHandler } from "./handlers/update-sentiment-poll";
 import { LiveTimerManager } from "./lib/timer-manager";
 import { handleTimerExpiration } from "./handlers/poll-end-handler";
 import { recoverActiveTimers } from "./lib/timer-persistance";
+import bullmeterRoute from "./server/routes/bullmeter.route.js";
+// Import Bull jobs and workers to process jobs
+// These imports initialize the workers automatically
+import "./server/bullboard/jobs/index.js";
+import "./server/bullboard/workers/index.js";
 
 // Load environment variables
 dotenv.config();
@@ -178,6 +183,9 @@ app.get("/current-time", (_req, res) => {
     timestamp: Date.now(),
   });
 });
+
+// BullMeter API routes
+app.use("/api/bullmeter", bullmeterRoute);
 
 // Use custom middlewares for handling 404 and errors
 app.use(handleNotFound);

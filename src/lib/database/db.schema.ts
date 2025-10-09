@@ -12,7 +12,6 @@ import { ulid } from "ulid";
 import { Address, Hex } from "viem";
 import { ZERO_ADDRESS } from "../contract-constants";
 import { ActivePlugins, SocialMediaUrls } from "../types/shared.type";
-
 /**
  * Brands table
  */
