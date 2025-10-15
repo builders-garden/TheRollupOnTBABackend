@@ -10,6 +10,7 @@ export class TipSentHandler extends SocketHandler {
     profilePicture,
     tipAmount,
     position,
+    customMessage
   }: TipSentEvent) {
     try {
       const brand = await getBrandById(brandId);
@@ -21,6 +22,7 @@ export class TipSentHandler extends SocketHandler {
         profilePicture,
         tipAmount,
         position,
+        customMessage,
       });
     } catch (e) {
       this.emitToStream(brandId, ServerToClientSocketEvents.ERROR, {

@@ -11,7 +11,7 @@ import {
 import { ulid } from "ulid";
 import { Address, Hex } from "viem";
 import { ZERO_ADDRESS } from "../contract-constants";
-import { ActivePlugins, SocialMediaUrls } from "../types/shared.type";
+
 /**
  * Brands table
  */
@@ -29,15 +29,10 @@ export const brandsTable = sqliteTable("brands", {
   youtubeLiveUrl: text("youtube_live_url"),
   liveUrlExpiration: integer("live_url_expiration"),
   isLive: integer("is_live", { mode: "boolean" }).default(false),
-  activePlugins: text("active_plugins", { mode: "json" }).$type<
-    ActivePlugins[]
-  >(),
   websiteUrl: text("website_url"),
-  socialMediaUrls: text("social_media_urls", {
-    mode: "json",
-  })
-    .$type<SocialMediaUrls>()
-    .default({ youtube: "", twitch: "", x: "" }),
+  twitchUrl: text("twitch_url"),
+  xUrl: text("x_url"),
+  telegramUrl: text("telegram_url"),
   isActive: integer("is_active", { mode: "boolean" }).default(false),
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
@@ -46,6 +41,12 @@ export const brandsTable = sqliteTable("brands", {
 export type Brand = typeof brandsTable.$inferSelect;
 export type CreateBrand = typeof brandsTable.$inferInsert;
 export type UpdateBrand = Partial<CreateBrand>;
+export type BrandSocialDatabaseProperty =
+  | "youtubeChannelId"
+  | "twitchUrl"
+  | "xUrl"
+  | "websiteUrl"
+  | "telegramUrl";
 
 /**
  * Bull Meters table
@@ -151,6 +152,7 @@ export const tipsTable = sqliteTable("tips", {
   platform: text("platform")
     .$type<"farcaster" | "base" | "web-app" | null>()
     .default(null),
+  customMessage: text("custom_message"),
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
@@ -220,6 +222,26 @@ export type CreateFarcasterUser = typeof userTable.$inferInsert;
 export type UpdateFarcasterUser = Partial<CreateFarcasterUser>;
 
 /**
+ * Hosts table
+ */
+export const hostsTable = sqliteTable("hosts", {
+  fid: integer("fid").primaryKey(),
+  farcasterUsername: text("farcaster_username"),
+  farcasterDisplayName: text("farcaster_display_name"),
+  avatarUrl: text("avatar_url"),
+  custodyAddress: text("custody_address"),
+  brandId: text("brand_id")
+    .notNull()
+    .references(() => brandsTable.id, { onDelete: "cascade" }),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export type Host = typeof hostsTable.$inferSelect;
+export type CreateHost = typeof hostsTable.$inferInsert;
+export type UpdateHost = Partial<CreateHost>;
+
+/**
  * Wallet table
  */
 export const walletTable = sqliteTable(
@@ -275,3 +297,59 @@ export const betaAccessKeysTable = sqliteTable("beta_access_keys", {
 export type BetaAccessKey = typeof betaAccessKeysTable.$inferSelect;
 export type CreateBetaAccessKey = typeof betaAccessKeysTable.$inferInsert;
 export type UpdateBetaAccessKey = Partial<CreateBetaAccessKey>;
+
+/**
+ * Notification subscriptions table
+ */
+export const notificationSubscriptionsTable = sqliteTable(
+  "notification_subscriptions",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => ulid()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    brandId: text("brand_id")
+      .notNull()
+      .references(() => brandsTable.id, { onDelete: "cascade" }),
+    createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => [
+    uniqueIndex("notification_subscriptions_user_brand_unique").on(
+      t.userId,
+      t.brandId,
+    ),
+  ],
+);
+
+export type NotificationSubscription =
+  typeof notificationSubscriptionsTable.$inferSelect;
+export type CreateNotificationSubscription =
+  typeof notificationSubscriptionsTable.$inferInsert;
+export type UpdateNotificationSubscription =
+  Partial<CreateNotificationSubscription>;
+
+/**
+ * Brand Notifications table
+ */
+export const brandNotificationsTable = sqliteTable("brand_notifications", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => ulid()),
+  brandId: text("brand_id")
+    .notNull()
+    .references(() => brandsTable.id, { onDelete: "cascade" }),
+  title: text("title"),
+  body: text("body"),
+  targetUrl: text("target_url"),
+  totalTargetUsers: integer("total_target_users"),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export type BrandNotification = typeof brandNotificationsTable.$inferSelect;
+export type CreateBrandNotification =
+  typeof brandNotificationsTable.$inferInsert;
+export type UpdateBrandNotification = Partial<CreateBrandNotification>;
